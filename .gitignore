@@ -16,7 +16,19 @@ build/
 .mypy_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 htmlcov/
+coverage.xml
+
+# Logs and local databases
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db
+
+# LangGraph local runtime
+.langgraph_api/
 
 # Secrets
 .env
@@ -32,3 +44,4 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+.python-version
