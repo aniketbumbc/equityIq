@@ -11,11 +11,19 @@ def technical_indicator_agent(state: EquityIQState) -> EquityIQState:
     """
     llm_calls = state.get("llm_calls", 0) + 1
     try:
-        query = state.get("user_query", "")
-        if not query:
-            technical_indicator = "No technical indicator query provided"
+        symbol = (state.get("symbol") or "").strip()
+        if not symbol:
+            history = state.get("historical_data")
+            if isinstance(history, dict):
+                symbol = ((history.get("meta") or {}).get("symbol") or "").strip()
+        if not symbol:
+            query = (state.get("user_query") or "").strip()
+            if not query:
+                technical_indicator = "No technical indicator query provided"
+            else:
+                symbol = lookup_symbol(query)
+                technical_indicator = get_technical_indicators(symbol)
         else:
-            symbol = lookup_symbol(query)
             technical_indicator = get_technical_indicators(symbol)
     except Exception as exc:
         technical_indicator = f"Technical indicator search failed: {exc}"

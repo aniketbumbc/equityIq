@@ -12,6 +12,7 @@ class EquityIQState(TypedDict):
     company_news:str #company news
     market_sentiment:str #market sentiment
     technical_indicator:str #technical indicator
+    symbol:str #ticker resolved by the symbol search API
 
 
 
