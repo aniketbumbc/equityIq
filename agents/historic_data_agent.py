@@ -11,9 +11,9 @@ def historic_data_agent(state: EquityIQState) -> EquityIQState:
     """
     llm_calls = state.get("llm_calls", 0) + 1
     try:
-        query = state.get("user_query", "")
+        query = (state.get("company_name") or "").strip()
         if not query:
-            historical_data = "No historic data available"
+            historical_data = "Company name not found in symbol"
             symbol = ""
         else:
             symbol = lookup_symbol(query)

@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class EquityIQState(TypedDict):
     messages:Annotated[list[AnyMessage],operator.add] #reducer object to append messages to the list
     user_query:str #user query
+    company_name:str #company name extracted from the user query
     analysis_results:str #analysis results
     llm_calls:int #number of LLM calls
     historical_data:str #historical data

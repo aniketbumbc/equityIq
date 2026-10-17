@@ -10,7 +10,7 @@ def company_news_agent(state: EquityIQState) -> EquityIQState:
     """
     llm_calls = state.get("llm_calls", 0) + 1
     try:
-        query = state.get("user_query", "")
+        query = (state.get("company_name") or state.get("user_query") or "").strip()
         if not query:
             company_news = "No company news query provided"
         else:
