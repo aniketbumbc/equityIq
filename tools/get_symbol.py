@@ -22,8 +22,8 @@ class SymbolLookupError(Exception):
         self.status_code = status_code
 
 
-def get_symbol(company_name: str) -> dict[str, Any]:
-    """Look up a company name and return one year of its daily bars."""
+def lookup_symbol(company_name: str) -> str:
+    """Return the ticker for a company name, for example Apple -> AAPL."""
     api_key = (os.getenv("TWELVEDATA_API_KEY") or "").strip()
     if not api_key:
         raise SymbolLookupError("TWELVEDATA_API_KEY is not set", status_code=500)
@@ -60,4 +60,9 @@ def get_symbol(company_name: str) -> dict[str, Any]:
     if not symbol:
         raise SymbolLookupError(f"No symbol found for {company_name}", status_code=404)
 
-    return get_historic_data(symbol)
+    return symbol
+
+
+def get_symbol(company_name: str) -> dict[str, Any]:
+    """Look up a company name and return one year of its daily bars."""
+    return get_historic_data(lookup_symbol(company_name))
