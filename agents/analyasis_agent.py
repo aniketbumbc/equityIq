@@ -51,6 +51,7 @@ def _latest_reading(payload, label: str) -> str:
         return f"{label} missing. {payload['error']}"
     return ""
 
+#_summarize_indicators is a function that takes a value and returns a string
 
 def _summarize_indicators(value) -> str:
     """Return the latest RSI, MACD, and ATR reading, not the full series."""

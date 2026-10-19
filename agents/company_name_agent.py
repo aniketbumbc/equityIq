@@ -11,6 +11,7 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 openai_llm = ChatOpenAI(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o-mini")
 
+#company_name_agent is a function that takes a state and returns a state
 
 def company_name_agent(state: EquityIQState) -> EquityIQState:
     """
