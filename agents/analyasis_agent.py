@@ -233,6 +233,12 @@ Final Objective: Produce the most defensible forecast possible from the availabl
             SystemMessage(content="You are a financial market analysis agent. Return only the JSON object requested in the user message. Do not invent prices, news, or indicator values."),
             HumanMessage(content=final_prompt)
         ])
+
+        approval_request = (
+          "Please review the following draft for analysis and approve it or request changes. or provide feedback."
+          f"Draft: {response.content}"
+        )
+
         answer = response.content
         if not isinstance(answer, str):
             answer = str(answer)
