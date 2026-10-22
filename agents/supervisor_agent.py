@@ -1,8 +1,31 @@
-from server.base import EquityIQState
-from server.utils import _llm_text, _json_from_llm, _empty_constraints, KNOWN_AGENTS, AGENT_ORDER
+from langchain_core.messages import AIMessage
 
-def analyasis_agent(state:EquityIQState):
-    query = state["query"]
+from base import EquityIQState
+from routing import AGNET_ORDER
+from utils import _empty_constraints, _json_from_llm, _llm_text
+
+SELECTABLE_AGENTS = [
+    name
+    for name in AGNET_ORDER
+    if name not in {"human_in_the_loop", "final_response_agent"}
+]
+
+
+def _as_bool(value, default: bool = True) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"true", "yes", "1"}:
+            return True
+        if lowered in {"false", "no", "0"}:
+            return False
+    return default
+
+
+def supervisor(state: EquityIQState) -> EquityIQState:
+    """Allow stock questions, then choose which agents should run."""
+    query = (state.get("user_query") or "").strip()
     llm_calls = state.get("llm_calls", 0)
 
     guardrails_prompt = f"""
@@ -25,7 +48,7 @@ def analyasis_agent(state:EquityIQState):
 
     Return strict JSON only:
     {{
-        "allowed_request": true | false,
+        "allowed_request": true,
         "reason": "reason for the decision"
     }}
 
@@ -33,93 +56,99 @@ def analyasis_agent(state:EquityIQState):
     """
 
     try:
-        guardrails_response_raw = _llm_text("You are the input guardrails for the user's request. Return strict JSON only.", guardrails_prompt)
+        guardrails_response_raw = _llm_text(
+            "You are the input guardrails for the user's request. Return strict JSON only.",
+            guardrails_prompt,
+        )
         guardrails_result = _json_from_llm(guardrails_response_raw)
-        allowed_request = bool(guardrails_result.get("allowed_request", True))
+        allowed_request = _as_bool(guardrails_result.get("allowed_request", True))
         guardrails_reason = str(guardrails_result.get("reason", "")).strip()
-    except Exception as e:
-        print(f"Error in guardrails: {e}")
+    except Exception as exc:
+        print(f"Error in guardrails: {exc}")
         allowed_request = True
         guardrails_reason = "Guardrails validation fallback allowed the request."
 
+    llm_calls += 1
     if not allowed_request:
-        reason = guardrails_reason or (" EquityIQ is not designed to answer this request. "
-                                      "Please try a different request. Please ask about valid share market analysis or stock related queries.")
+        reason = guardrails_reason or (
+            "EquityIQ is not designed to answer this request. "
+            "Please ask about share market analysis or a stock."
+        )
+        return {
+            "guardrails_allowed": False,
+            "guardrails_reason": reason,
+            "selected_agents": [],
+            "query_constraints": _empty_constraints(),
+            "supervisor_reasoning": reason,
+            "final_response": reason,
+            "messages": [AIMessage(content=f"Guardrails validation failed. {reason}")],
+            "llm_calls": llm_calls,
+        }
 
-    return {
-        "guardrail_allowed":False,
-        "guardrail_reason":reason,
-        "llm_calls":llm_calls + 1,
-        "selected_agent":[],
-        "query_constraints": _empty_constraints(),
-        "supervisor_reasoning":reason,
-        "final_response":reason,
-        "messages":[AIMessage(content=f"Guardrails validation failed. {reason}")],
-        "llm_calls":llm_calls + 1,
-    }
-    
     supervisor_prompt = f"""
    You are the supervisor of the EquityIQ multiagent system. Understand the user's request and the route to the different agents.
 
    Available agents:
    - company_name_agent: Extracts the company name from the user's request.
-   - historical_data_agent: Extracts historical data from the company's financial statements and other relevant sources.
-   - company_news_agent: Extracts company news from the internet and other relevant sources.
-   - market_sentiment_agent: Extracts market sentiment from the internet and other relevant sources.
-   - technical_indicator_agent: Extracts technical indicators from the company's financial statements and other relevant sources.
-   - analysis_agent: Analyzes the company's financial statements and other relevant sources.
+   - historic_data_agent: Fetches one year of daily prices for the company.
+   - company_news_agent: Fetches recent company news.
+   - market_sentiment_agent: Fetches broad stock-market sentiment.
+   - technical_indicator_agent: Fetches RSI, MACD, and ATR.
+   - analyasis_agent: Writes the forecast from the gathered evidence.
 
    Return strict JSON only using this schema:
    {{
-    "selected_agents": ["company_name_agent", "historical_data_agent", "company_news_agent", "market_sentiment_agent", "technical_indicator_agent", "analysis_agent"],
-    "query_constraints":{{
+    "selected_agents": ["company_name_agent", "historic_data_agent", "company_news_agent", "market_sentiment_agent", "technical_indicator_agent", "analyasis_agent"],
+    "query_constraints": {{
         "company": "",
         "historical": "",
         "news": "",
         "sentiment": "",
         "technical": "",
         "analysis": "",
-        "indicator": "",
+        "indicator": ""
     }},
-    "supervisor_reasoning": "reasoning for the supervisor's decision",
+    "supervisor_reasoning": "reasoning for the supervisor's decision"
     }}
 
     User request: {query}
     """
 
     try:
-        supervisor_response_raw = _llm_text("You are the supervisor of the EquityIQ multiagent system. Return strict JSON only using this schema.", supervisor_prompt)
+        supervisor_response_raw = _llm_text(
+            "You are the supervisor of the EquityIQ multiagent system. Return strict JSON only.",
+            supervisor_prompt,
+        )
         parsed_response = _json_from_llm(supervisor_response_raw)
         requested_agents = parsed_response.get("selected_agents", [])
+        if not isinstance(requested_agents, list):
+            requested_agents = []
         selected_agents = [
-            name for name in AGENT_ORDER
-            if name in requested_agents and name in KNOWN_AGENTS
-        ]       
-
-        if "analysis_agent" in selected_agents:
-            selected_agents.append("analysis_agent")
+            name for name in SELECTABLE_AGENTS if name in requested_agents
+        ]
+        if not selected_agents:
+            selected_agents = SELECTABLE_AGENTS.copy()
 
         constraints = _empty_constraints()
-        parsed_constraints = parsed_response.get("query_constraints",{})
+        parsed_constraints = parsed_response.get("query_constraints", {})
         if isinstance(parsed_constraints, dict):
-            constraints.update(parsed_constraints)
-        
+            constraints.update({key: parsed_constraints.get(key, "") for key in constraints})
+
         supervisor_reasoning = str(parsed_response.get("supervisor_reasoning", "")).strip()
-        llm_calls = llm_calls + 1
-        final_response = str(parsed_response.get("final_response", "")).strip()
-    except Exception as e:
-        print(f"Error in supervisor: {e}")
-        selected_agents = AGENT_ORDER.copy()
+        llm_calls += 1
+    except Exception as exc:
+        print(f"Error in supervisor: {exc}")
+        selected_agents = SELECTABLE_AGENTS.copy()
         constraints = _empty_constraints()
-        supervisor_reasoning = (f"Supervisor validation fallback allowed the request. {e}")
-    
+        supervisor_reasoning = f"Supervisor validation fallback allowed the request. {exc}"
+        llm_calls += 1
+
     return {
-        "guardrail_allowed":True,
-        "guardrail_reason":guardrails_reason,
-        "selected_agents":selected_agents,
-        "query_constraints":constraints,
-        "supervisor_reasoning":supervisor_reasoning,
-        "final_response":final_response,
-        "messages":[AIMessage(content=f"Supervisor validation allowed the request.")],
-        "llm_calls":llm_calls,
+        "guardrails_allowed": True,
+        "guardrails_reason": guardrails_reason,
+        "selected_agents": selected_agents,
+        "query_constraints": constraints,
+        "supervisor_reasoning": supervisor_reasoning,
+        "messages": [AIMessage(content="Supervisor validation allowed the request.")],
+        "llm_calls": llm_calls,
     }

@@ -11,7 +11,7 @@ from agents.final_agent import final_agent as final_response_agent
 from base import EquityIQState
 from routing import route_from_supervisor, ROUTE_MAP, route_after_agent
 from agents.guardrail_block_agent import guardrail_block_agent as guardrail_blocked
-from agents.supervisor_agent import analyasis_agent as supervisor
+from agents.supervisor_agent import supervisor
 
 builder = StateGraph(EquityIQState) #create graph
 
