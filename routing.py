@@ -3,23 +3,26 @@ from base import EquityIQState
 
 
 AGNET_ORDER = [
-    "guardrail_blocked",
-    "historical_data_agent",
+    "company_name_agent",
+    "historic_data_agent",
     "company_news_agent",
     "market_sentiment_agent",
     "technical_indicator_agent",
     "analyasis_agent",
+    "human_in_the_loop",
     "final_response_agent",
 ]
 
 
 ROUTE_MAP = {
     "guardrail_blocked": "guardrail_blocked",
-    "historical_data_agent": "historical_data_agent",
+    "company_name_agent": "company_name_agent",
+    "historic_data_agent": "historic_data_agent",
     "company_news_agent": "company_news_agent",
     "market_sentiment_agent": "market_sentiment_agent",
     "technical_indicator_agent": "technical_indicator_agent",
     "analyasis_agent": "analyasis_agent",
+    "human_in_the_loop": "human_in_the_loop",
     "final_response_agent": "final_response_agent",
 }
 

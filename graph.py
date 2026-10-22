@@ -6,12 +6,12 @@ from agents.company_news_agent import company_news_agent
 from agents.historic_data_agent import historic_data_agent
 from agents.market_sentiment_agent import market_sentiment_agent
 from agents.technical_indicator_agent import technical_indicator_agent
-from agents.human_in_the_loop import human_in_the_loop
-from agents.final_response_agent import final_response_agent
+from agents.human_inloop_agent import human_inloop_agent as human_in_the_loop
+from agents.final_agent import final_agent as final_response_agent
 from base import EquityIQState
-from routing import route_from_supervisor,ROUTE_MAP, route_after_agent
-from agents.guardrail_blocked import guardrail_blocked
-from agents.supervisor import supervisor
+from routing import route_from_supervisor, ROUTE_MAP, route_after_agent
+from agents.guardrail_block_agent import guardrail_block_agent as guardrail_blocked
+from agents.supervisor_agent import analyasis_agent as supervisor
 
 builder = StateGraph(EquityIQState) #create graph
 
