@@ -1,3 +1,4 @@
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from agents.analyasis_agent import analyasis_agent
@@ -9,7 +10,7 @@ from agents.technical_indicator_agent import technical_indicator_agent
 from agents.human_inloop_agent import human_inloop_agent as human_in_the_loop
 from agents.final_agent import final_agent as final_response_agent
 from base import EquityIQState
-from routing import route_from_supervisor, ROUTE_MAP, route_after_agent
+from routing import route_after_agent, route_from_human, route_from_supervisor, ROUTE_MAP
 from agents.guardrail_block_agent import guardrail_block_agent as guardrail_blocked
 from agents.supervisor_agent import supervisor
 
@@ -40,10 +41,14 @@ builder.add_conditional_edges("company_news_agent", route_after_agent("company_n
 builder.add_conditional_edges("market_sentiment_agent", route_after_agent("market_sentiment_agent"),ROUTE_MAP)
 builder.add_conditional_edges("technical_indicator_agent", route_after_agent("technical_indicator_agent"),ROUTE_MAP)
 builder.add_conditional_edges("analyasis_agent", route_after_agent("analyasis_agent"),ROUTE_MAP)
-builder.add_edge("analyasis_agent", "human_in_the_loop")
-builder.add_edge("human_in_the_loop", "final_response_agent")
+builder.add_conditional_edges(
+    "human_in_the_loop",
+    route_from_human,
+    ["final_response_agent", END],
+)
+builder.add_edge("guardrail_blocked", END)
 builder.add_edge("final_response_agent", END)
 
 
 
-graph = builder.compile()
+graph = builder.compile(checkpointer=InMemorySaver())

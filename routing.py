@@ -1,3 +1,5 @@
+from langgraph.graph import END
+
 from base import EquityIQState
 
 
@@ -49,16 +51,24 @@ def route_after_agent(current_agent:str):
         current_index = AGNET_ORDER.index(current_agent)
 
         for next_agent in AGNET_ORDER[current_index + 1:]:
-            if next_agent in selected:
+            if next_agent in selected and next_agent not in {
+                "human_in_the_loop",
+                "final_response_agent",
+            }:
                 return next_agent
+        if current_agent == "analyasis_agent":
+            return "human_in_the_loop"
         return "analyasis_agent"
     return route
 
 
 def route_from_human(state:EquityIQState) -> str:
     """
-    Route the request to the appropriate agent based on the human's decision.
+    An approval or revision feedback goes to the final report.
+    A rejection with no feedback stops the graph.
     """
-    if not state.get("approved",False):
+    if state.get("approved", False):
         return "final_response_agent"
-    return "analyasis_agent"
+    if (state.get("human_feedback") or "").strip():
+        return "final_response_agent"
+    return END
