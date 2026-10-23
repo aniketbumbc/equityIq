@@ -27,11 +27,6 @@ builder.add_node("analyasis_agent", analyasis_agent) #add node to graph
 builder.add_node("human_in_the_loop", human_in_the_loop) #add node to graph
 builder.add_node("final_response_agent", final_response_agent)
 
-
-
-
-
-
 builder.add_edge(START, "supervisor") #add edge to graph
 builder.add_conditional_edges("supervisor", route_from_supervisor,ROUTE_MAP)
 
