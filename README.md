@@ -39,36 +39,35 @@ The app listens on `http://127.0.0.1:8000`. Interactive docs are at `http://127.
 Start a run.
 
 ```bash
-curl -s -X POST "http://127.0.0.1:8000/api/analyze" \
+curl -N -X POST "http://127.0.0.1:8000/api/analyze" \
   -H "Content-Type: application/json" \
   -d '{"query":"Should I buy Apple stock"}'
 ```
 
-A normal stock question returns:
+The response is a stream of server-sent events. Each finished agent sends one event:
 
-```json
-{
-  "status": "needs_review",
-  "thread_id": "...",
-  "review": {
-    "question": "Do you approve of the draft analysis?",
-    "draft_analysis": "{ ... forecast JSON ... }"
-  }
-}
+```text
+data: {"node":"company_name_agent","company_name":"Apple"}
+
+data: {"node":"historic_data_agent","symbol":"AAPL"}
 ```
 
-Copy `thread_id`. The first call can take a minute because it calls the data providers and the model.
+When the draft is ready, the stream ends with:
 
-A question that is not about the stock market returns `"status": "complete"` with the block reason in `final_response`.
+```text
+data: {"status":"needs_review","thread_id":"...","review":{"question":"Do you approve of the draft analysis?","draft_analysis":"{ ... }"}}
+```
+
+Copy `thread_id`. A question that is not about the stock market ends with `"status": "complete"` and the block reason in `final_response`.
 
 ### `POST /api/analyze/resume`
 
-Continue the same run. The server process must still be the one that started it.
+Continue the same run. The server process must still be the one that started it. This response is also a stream.
 
 Approve the draft:
 
 ```bash
-curl -s -X POST "http://127.0.0.1:8000/api/analyze/resume" \
+curl -N -X POST "http://127.0.0.1:8000/api/analyze/resume" \
   -H "Content-Type: application/json" \
   -d '{"thread_id":"PASTE_THREAD_ID","approved":true,"feedback":""}'
 ```
@@ -76,7 +75,7 @@ curl -s -X POST "http://127.0.0.1:8000/api/analyze/resume" \
 Request a revision:
 
 ```bash
-curl -s -X POST "http://127.0.0.1:8000/api/analyze/resume" \
+curl -N -X POST "http://127.0.0.1:8000/api/analyze/resume" \
   -H "Content-Type: application/json" \
   -d '{"thread_id":"PASTE_THREAD_ID","approved":false,"feedback":"Make the forecast horizon 30 days"}'
 ```
@@ -84,12 +83,14 @@ curl -s -X POST "http://127.0.0.1:8000/api/analyze/resume" \
 Reject it:
 
 ```bash
-curl -s -X POST "http://127.0.0.1:8000/api/analyze/resume" \
+curl -N -X POST "http://127.0.0.1:8000/api/analyze/resume" \
   -H "Content-Type: application/json" \
   -d '{"thread_id":"PASTE_THREAD_ID","approved":false,"feedback":""}'
 ```
 
-Approval and revision return `"status": "complete"` and a `final_response` JSON report. A rejection with empty feedback ends the run without that report. Each test needs a new `thread_id` from `/api/analyze`.
+Approval and revision end with `"status": "complete"` and a `final_response` JSON report. A rejection with empty feedback ends without that report. Each test needs a new `thread_id` from `/api/analyze`.
+
+The browser should use `fetch` and read `response.body`. `EventSource` only supports GET.
 
 ## Pipeline
 
