@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from uuid import uuid4
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langgraph.types import Command
 from pydantic import BaseModel, Field
@@ -10,6 +11,12 @@ from pydantic import BaseModel, Field
 from graph import graph
 
 app = FastAPI(title="EquityIQ")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 PUBLIC_KEYS = (
     "user_query",
