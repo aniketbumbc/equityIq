@@ -2,7 +2,6 @@ import json
 import os
 from pathlib import Path
 from typing import Any
-
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI

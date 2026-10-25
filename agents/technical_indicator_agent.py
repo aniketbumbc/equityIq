@@ -4,6 +4,9 @@ from base import EquityIQState
 from langchain_core.messages import AIMessage
 
 #technical_indicator_agent is a function that takes a state and returns a state
+# it fetches RSI, MACD, and ATR for the company in the user query
+# it returns the technical indicators in a dictionary
+
 def technical_indicator_agent(state: EquityIQState) -> EquityIQState:
     """
     Technical indicator agent fetches RSI, MACD, and ATR for the company in the user query.

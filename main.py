@@ -137,7 +137,6 @@ def analyze(body: AnalyzeRequest):
         thread_id,
     ))
 
-
 @app.post("/api/analyze/resume")
 def resume(body: ResumeRequest):
     return _sse(_stream(

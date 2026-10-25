@@ -1,3 +1,6 @@
+# run this file to test the graph to see if it works
+
+
 from tools.get_symbol import get_symbol
 from tools.technical_indicator import get_technical_indicators
 from graph import graph
