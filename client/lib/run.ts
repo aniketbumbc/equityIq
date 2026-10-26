@@ -232,6 +232,16 @@ function blockRun(state: RunState, now: number): RunState {
   return { ...state, phase: "blocked", steps };
 }
 
+function settleEarlier(steps: StepState[], currentId: StepId): StepState[] {
+  const currentIndex = steps.findIndex((step) => step.id === currentId);
+  if (currentIndex < 0) return steps;
+  return steps.map((step, index) => {
+    if (index >= currentIndex) return step;
+    if (step.status !== "waiting" && step.status !== "working") return step;
+    return { ...step, status: "skipped" };
+  });
+}
+
 function skipUnselected(steps: StepState[], selected: string[] | undefined): StepState[] {
   if (!selected?.length) return steps;
   const chosen = new Set(selected);

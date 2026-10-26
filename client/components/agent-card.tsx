@@ -108,9 +108,9 @@ function bodyFor(step: StepState, facts: Facts) {
     case "historic_data_agent":
       return <History facts={facts} />;
     case "company_news_agent":
-      return <News facts={facts} />;
+      return <SearchResults raw={facts.company_news} empty="No company news was returned." />;
     case "market_sentiment_agent":
-      return <p className="prose">{facts.market_sentiment || "No market sentiment was returned."}</p>;
+      return <SearchResults raw={facts.market_sentiment} empty="No market sentiment was returned." />;
     case "technical_indicator_agent":
       return <Indicators facts={facts} />;
     case "analyasis_agent":
@@ -212,10 +212,10 @@ function CloseChart({ bars }: { bars: { datetime: string; close: number }[] }) {
   );
 }
 
-function News({ facts }: { facts: Facts }) {
-  const items = parseNews(facts.company_news);
+function SearchResults({ raw, empty }: { raw: unknown; empty: string }) {
+  const items = parseNews(raw);
   const [showAll, setShowAll] = useState(false);
-  if (!items.length) return <p className="prose">{facts.company_news || "No company news was returned."}</p>;
+  if (!items.length) return <p className="prose">{typeof raw === "string" && raw ? raw : empty}</p>;
   const visible = showAll ? items : items.slice(0, 3);
   return (
     <div className="stack">

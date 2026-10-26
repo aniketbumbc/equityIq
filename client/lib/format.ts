@@ -83,17 +83,30 @@ export function parseHistory(value: unknown): HistoryView | null {
 
 export function parseNews(raw: unknown): NewsItem[] {
   if (typeof raw !== "string" || !raw.trim()) return [];
+  // Results start with "N. **Title**"; snippets can contain blank lines of their own.
   return raw
-    .split(/\n\n+/)
+    .split(/\n\s*\n(?=\d+\.\s*\*\*)/)
     .map((block) => {
       const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
       if (!lines.length) return null;
-      const title = lines[0].replace(/^\d+\.\s*/, "").replace(/\*\*/g, "").trim();
+      const title = stripMarkdown(lines[0].replace(/^\d+\.\s*/, ""));
       const url = lines.find((line) => /^https?:\/\//.test(line)) || "";
-      const body = lines.filter((line) => line !== lines[0] && line !== url).join(" ");
+      const body = lines
+        .filter((line) => line !== lines[0] && line !== url && !line.startsWith("#"))
+        .map(stripMarkdown)
+        .filter(Boolean)
+        .join(" ");
       return { title, body, url };
     })
     .filter((item): item is NewsItem => Boolean(item?.title));
+}
+
+function stripMarkdown(line: string): string {
+  return line
+    .replace(/^#+\s*/, "")
+    .replace(/\*\*|__/g, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .trim();
 }
 
 function latestSeries(payload: unknown, pick: (row: Record<string, unknown>) => string): IndicatorReading | null {
