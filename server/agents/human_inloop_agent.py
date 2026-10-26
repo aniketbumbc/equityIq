@@ -26,6 +26,7 @@ def human_inloop_agent(state:EquityIQState):
         "approved":approved,
         "human_feedback":human_feedback,
         "revision_notes":[human_feedback] if human_feedback and not approved else [],
+        "rerun_agents":[],
         "messages":[
             AIMessage(content=f"Human in-loop review complete. Approved: {approved}. Feedback: {human_feedback}.")
         ],

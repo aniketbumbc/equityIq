@@ -14,7 +14,8 @@ def company_news_agent(state: EquityIQState) -> EquityIQState:
         if not query:
             company_news = "No company news query provided"
         else:
-            company_news = search_tavily(query)
+            focus = ((state.get("data_settings") or {}).get("news_focus") or "").strip()
+            company_news = search_tavily(f"{query} {focus}".strip())
     except Exception as exc:
         company_news = f"Company news search failed: {exc}"
     return {

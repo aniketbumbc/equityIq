@@ -22,18 +22,18 @@ class HistoricDataError(Exception):
         self.status_code = status_code
 
 
-def _one_year_range() -> tuple[str, str]:
-    """Return start and end dates covering the past year, ending today."""
+def _date_range(years: int) -> tuple[str, str]:
+    """Return start and end dates covering the past `years` years, ending today."""
     end_date = date.today()
     try:
-        start_date = end_date.replace(year=end_date.year - 1)
+        start_date = end_date.replace(year=end_date.year - years)
     except ValueError:
-        start_date = end_date.replace(year=end_date.year - 1, day=28)
+        start_date = end_date.replace(year=end_date.year - years, day=28)
     return start_date.isoformat(), end_date.isoformat()
 
 
-def get_historic_data(symbol: str) -> dict[str, Any]:
-    """Return one year of daily bars ending today."""
+def get_historic_data(symbol: str, years: int = 1, interval: str = INTERVAL) -> dict[str, Any]:
+    """Return `years` years of bars at `interval` (1day, 1week, or 1month) ending today."""
     api_key = (os.getenv("TWELVEDATA_API_KEY") or "").strip()
     if not api_key:
         raise HistoricDataError("TWELVEDATA_API_KEY is not set", status_code=500)
@@ -42,10 +42,10 @@ def get_historic_data(symbol: str) -> dict[str, Any]:
     if not symbol:
         raise HistoricDataError("symbol is required", status_code=400)
 
-    start_date, end_date = _one_year_range()
+    start_date, end_date = _date_range(years)
     params: dict[str, Any] = {
         "symbol": symbol,
-        "interval": INTERVAL,
+        "interval": interval,
         "start_date": start_date,
         "end_date": end_date,
         "apikey": api_key,

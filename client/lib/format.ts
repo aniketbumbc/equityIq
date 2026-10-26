@@ -7,6 +7,8 @@ export type Bar = {
 
 export type HistoryView = {
   symbol: string;
+  interval: string;
+  firstDate: string;
   latestClose: number;
   latestDate: string;
   change: number | null;
@@ -47,7 +49,7 @@ export function parseJson(raw: unknown): Record<string, unknown> | null {
 
 export function parseHistory(value: unknown): HistoryView | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const data = value as { meta?: { symbol?: string }; values?: unknown };
+  const data = value as { meta?: { symbol?: string; interval?: string }; values?: unknown };
   if (!Array.isArray(data.values)) return null;
   const bars = data.values
     .map((item) => {
@@ -71,6 +73,8 @@ export function parseHistory(value: unknown): HistoryView | null {
   const lows = bars.map((bar) => bar.low).filter(Number.isFinite);
   return {
     symbol: data.meta?.symbol || "",
+    interval: data.meta?.interval || "1day",
+    firstDate: oldest.datetime.slice(0, 10),
     latestClose: latest.close,
     latestDate: latest.datetime.slice(0, 10),
     change: oldest.close ? (latest.close - oldest.close) / oldest.close : null,
@@ -183,6 +187,17 @@ export function parseIndicators(value: unknown): IndicatorReading[] {
   }
 
   return readings;
+}
+
+const INTERVAL_WORD: Record<string, string> = { "1day": "daily", "1week": "weekly", "1month": "monthly" };
+
+export function intervalWord(interval: string | undefined): string {
+  return INTERVAL_WORD[interval || "1day"] || interval || "daily";
+}
+
+export function historyRange(settings: { history_years?: number; history_interval?: string } | undefined): string {
+  const years = settings?.history_years || 1;
+  return `${years === 1 ? "one year" : `${years} years`} of ${intervalWord(settings?.history_interval)} prices`;
 }
 
 export function formatPrice(value: number | null | undefined): string {

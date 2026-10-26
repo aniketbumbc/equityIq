@@ -25,12 +25,14 @@ ROUTE_MAP = {
     "technical_indicator_agent": "technical_indicator_agent",
     "analyasis_agent": "analyasis_agent",
     "human_in_the_loop": "human_in_the_loop",
+    "revision_planner": "revision_planner",
     "final_response_agent": "final_response_agent",
 }
 
 
 def  _selected_agent(state:EquityIQState) -> list[str]:
-    selected = state.get("selected_agents",[])
+    # During a revision only the agents the planner chose run again.
+    selected = state.get("rerun_agents") or state.get("selected_agents",[])
     return [agent for agent in AGNET_ORDER if agent in selected]
 
 
@@ -65,11 +67,18 @@ def route_after_agent(current_agent:str):
 def route_from_human(state:EquityIQState) -> str:
     """
     An approval goes to the final report.
-    Revision feedback goes back to the analysis agent, which pauses for review again.
+    Revision feedback goes to the revision planner, which re-runs the agents it needs,
+    then the analysis agent writes a new draft and pauses for review again.
     A rejection with no feedback stops the graph.
     """
     if state.get("approved", False):
         return "final_response_agent"
     if (state.get("human_feedback") or "").strip():
-        return "analyasis_agent"
+        return "revision_planner"
     return END
+
+
+def route_from_planner(state:EquityIQState) -> str:
+    """Start with the first agent to re-run, or go straight to a new draft."""
+    rerun = [agent for agent in AGNET_ORDER if agent in (state.get("rerun_agents") or [])]
+    return rerun[0] if rerun else "analyasis_agent"

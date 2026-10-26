@@ -37,6 +37,16 @@ export type Facts = {
   supervisor_reasoning?: string;
   approved?: boolean;
   human_feedback?: string;
+  rerun_agents?: string[];
+  data_settings?: DataSettings;
+  revision_reasoning?: string;
+};
+
+export type DataSettings = {
+  history_years?: number;
+  history_interval?: string;
+  news_focus?: string;
+  sentiment_focus?: string;
 };
 
 export type ReviewPayload = {
@@ -58,6 +68,7 @@ export type RunState = {
   error: string;
   reviewNote: string;
   revision: number;
+  rerun: StepId[];
 };
 
 const FACT_KEYS: (keyof Facts)[] = [
@@ -76,6 +87,9 @@ const FACT_KEYS: (keyof Facts)[] = [
   "supervisor_reasoning",
   "approved",
   "human_feedback",
+  "rerun_agents",
+  "data_settings",
+  "revision_reasoning",
 ];
 
 export function createRun(query: string, now = Date.now()): RunState {
@@ -94,6 +108,7 @@ export function createRun(query: string, now = Date.now()): RunState {
     error: "",
     reviewNote: "",
     revision: 0,
+    rerun: [],
   };
 }
 
@@ -117,13 +132,13 @@ export function beginResume(
   now = Date.now(),
 ): RunState {
   if (kind === "revise") {
-    // The draft goes back to the analysis agent, then the run pauses for review again.
+    // The planner picks agents to re-run, then the analysis agent writes a new draft and the run pauses again.
     const steps = state.steps.map((step) => {
       if (step.id === "analyasis_agent") return { id: step.id, status: "working" as const, startedAt: now };
       if (step.id === "review") return { id: step.id, status: "waiting" as const };
       return step;
     });
-    return { ...state, phase: "revising", reviewNote: "Revised", revision: state.revision + 1, steps };
+    return { ...state, phase: "revising", reviewNote: "Revised", revision: state.revision + 1, rerun: [], steps };
   }
   const steps = state.steps.map((step) => {
     if (step.id === "review") {
@@ -152,6 +167,7 @@ function applyNode(state: RunState, event: StreamEvent, now: number): RunState {
     if (state.phase === "revising") return { ...state, facts };
     return { ...state, facts, steps: markReview(steps, now) };
   }
+  if (event.node === "revision_planner") return planRevision(state, facts, now);
   const id = event.node as StepId;
   if (!steps.some((step) => step.id === id)) return { ...state, facts };
 
@@ -169,6 +185,16 @@ function applyNode(state: RunState, event: StreamEvent, now: number): RunState {
   steps = settleEarlier(steps, id);
   if (id === "supervisor") steps = skipUnselected(steps, facts.selected_agents);
   return { ...state, facts, steps: promoteWorking(steps, now) };
+}
+
+function planRevision(state: RunState, facts: Facts, now: number): RunState {
+  const rerun = (facts.rerun_agents || []).filter((id): id is StepId => state.steps.some((step) => step.id === id));
+  if (!rerun.length) return { ...state, facts, rerun };
+  // Chosen agents run again in order, then the analysis agent; the rest keep their results.
+  const steps = state.steps.map((step) =>
+    rerun.includes(step.id) || step.id === "analyasis_agent" ? { id: step.id, status: "waiting" as const } : step,
+  );
+  return { ...state, facts, rerun, steps: promoteWorking(steps, now) };
 }
 
 function pauseForReview(state: RunState, event: StreamEvent, now: number): RunState {

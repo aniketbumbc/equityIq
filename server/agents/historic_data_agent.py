@@ -17,7 +17,12 @@ def historic_data_agent(state: EquityIQState) -> EquityIQState:
             symbol = ""
         else:
             symbol = lookup_symbol(query)
-            historical_data = get_historic_data(symbol)
+            settings = state.get("data_settings") or {}
+            historical_data = get_historic_data(
+                symbol,
+                years=settings.get("history_years") or 1,
+                interval=settings.get("history_interval") or "1day",
+            )
     except Exception as exc:
         historical_data = f"Historic data search failed: {exc}"
         symbol = ""

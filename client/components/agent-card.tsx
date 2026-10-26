@@ -4,6 +4,8 @@ import { useState } from "react";
 import {
   formatPercent,
   formatPrice,
+  historyRange,
+  intervalWord,
   parseHistory,
   parseIndicators,
   parseNews,
@@ -162,8 +164,11 @@ function History({ facts }: { facts: Facts }) {
           <div className="mono muted small">{history.latestDate}</div>
         </div>
         <div>
-          <div className="kicker">1-year change</div>
+          <div className="kicker">Period change</div>
           <div className={`stat ${changeClass}`}>{formatPercent(history.change)}</div>
+          <div className="mono muted small">
+            {history.firstDate} → {history.latestDate}
+          </div>
         </div>
         <div>
           <div className="kicker">Period high / low</div>
@@ -172,8 +177,9 @@ function History({ facts }: { facts: Facts }) {
           </div>
         </div>
         <div>
-          <div className="kicker">Daily bars</div>
+          <div className="kicker">Bars</div>
           <div className="stat">{history.count}</div>
+          <div className="muted small">{intervalWord(history.interval)}</div>
         </div>
       </div>
       <CloseChart bars={history.bars} />
@@ -202,7 +208,7 @@ function CloseChart({ bars }: { bars: { datetime: string; close: number }[] }) {
   const area = `${pad},${height - pad} ${points} ${width - pad},${height - pad}`;
   return (
     <figure className="chart">
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="One-year daily close">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Close price over the period">
         <defs>
           <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
@@ -272,7 +278,7 @@ export function summaryFor(step: StepState, facts: Facts): string {
     case "historic_data_agent": {
       const history = parseHistory(facts.historical_data);
       if (!history) return facts.symbol || "Done";
-      return `${facts.symbol || history.symbol} ${formatPrice(history.latestClose)} · ${formatPercent(history.change)} 1y`;
+      return `${facts.symbol || history.symbol} ${formatPrice(history.latestClose)} · ${formatPercent(history.change)} since ${history.firstDate.slice(0, 7)}`;
     }
     case "company_news_agent": {
       const count = parseNews(facts.company_news).length;
@@ -300,7 +306,7 @@ function workingCopy(id: StepState["id"], facts: Facts): string {
     case "company_name_agent":
       return "Reading the company name from your question…";
     case "historic_data_agent":
-      return "Looking up the ticker and one year of daily prices…";
+      return `Looking up the ticker and ${historyRange(facts.data_settings)}…`;
     case "company_news_agent":
       return "Searching recent company news…";
     case "market_sentiment_agent":

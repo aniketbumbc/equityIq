@@ -29,10 +29,12 @@ def _summarize_history(value) -> str:
                 lows.append(float(bar["low"]))
             except (KeyError, TypeError, ValueError):
                 continue
-        symbol = (value.get("meta") or {}).get("symbol", "")
+        meta = value.get("meta") or {}
+        symbol = meta.get("symbol", "")
+        interval = meta.get("interval", "1day")
         lines = [
             f"Symbol: {symbol}",
-            f"Bars: {len(bars)} daily bars from {oldest.get('datetime')} to {latest.get('datetime')}",
+            f"Bars: {len(bars)} {interval} bars from {oldest.get('datetime')} to {latest.get('datetime')}",
             f"Latest close: {latest.get('close')} on {latest.get('datetime')}",
             f"Latest open/high/low: {latest.get('open')} / {latest.get('high')} / {latest.get('low')}",
         ]
@@ -109,6 +111,7 @@ def _revision_request(state:EquityIQState) -> str:
     The user reviewed your previous draft and asked for changes.
     Previous draft: {state.get("analysis_results","")}
     User feedback: {feedback}
+    Data fetched again for this revision: {", ".join(state.get("rerun_agents") or []) or "none, the inputs above are unchanged"}. {state.get("revision_reasoning","")}
     Revise the draft to address the feedback, using only the inputs above.
     If the feedback asks for data that is not in the inputs, say so in data_quality.limitations instead of inventing it.
     """

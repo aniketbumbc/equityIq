@@ -29,6 +29,9 @@ class EquityIQState(TypedDict):
     approved:bool #approved
     human_feedback:str #human feedback
     revision_notes:Annotated[list[str],operator.add] #every revision request, oldest first
+    rerun_agents:list[str] #research agents the revision planner chose to run again
+    data_settings:dict[str,Any] #history range, interval, and search focus set by revisions
+    revision_reasoning:str #why the planner chose those agents
     final_response:str #final response
 
 

@@ -256,6 +256,8 @@ function Workspace({
     if (step.id in openOverride) return openOverride[step.id];
     if (run.phase === "running") return step.status === "done" || step.status === "failed" || step.status === "working";
     if (run.phase === "review" || run.phase === "revising" || run.phase === "finishing") {
+      if (run.phase === "revising" && step.status === "working") return true;
+      if (run.rerun.includes(step.id) && step.status === "done") return true;
       return step.status === "failed" || (step.id === "analyasis_agent" && step.status !== "skipped");
     }
     if (run.phase === "failed") return step.status === "failed";
@@ -422,10 +424,18 @@ function ReviewPanel({
       <h2>{run.review?.question || "Do you approve of the draft analysis?"}</h2>
       <p className="muted">The run is paused. The evidence above stays here while you decide.</p>
       {run.revision > 0 && run.facts.human_feedback ? (
-        <p className="note">
-          <strong>Revised for your feedback: </strong>
-          {run.facts.human_feedback}
-        </p>
+        <div className="note">
+          <p>
+            <strong>Revised for your feedback: </strong>
+            {run.facts.human_feedback}
+          </p>
+          <p>
+            <strong>{run.rerun.length ? "Ran again: " : "No agents ran again. "}</strong>
+            {run.rerun.map((id) => STEP_LABEL[id]).join(", ")}
+            {run.rerun.length ? ". " : ""}
+            {run.facts.revision_reasoning}
+          </p>
+        </div>
       ) : null}
       {run.review?.approval_request ? <p>{run.review.approval_request}</p> : null}
       <label htmlFor="feedback">Feedback for a revision</label>

@@ -34,6 +34,9 @@ PUBLIC_KEYS = (
     "supervisor_reasoning",
     "approved",
     "human_feedback",
+    "rerun_agents",
+    "data_settings",
+    "revision_reasoning",
 )
 
 
