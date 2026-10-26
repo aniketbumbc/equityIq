@@ -16,24 +16,23 @@ build/
 .mypy_cache/
 .ruff_cache/
 .coverage
-.coverage.*
 htmlcov/
-coverage.xml
-
-# Logs and local databases
-*.log
-logs/
-*.sqlite
-*.sqlite3
-*.db
-
-# LangGraph local runtime
-.langgraph_api/
 
 # Secrets
 .env
 .env.*
 !.env.example
+
+# Node / client
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # OS
 .DS_Store
@@ -44,4 +43,8 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
-.python-version
+
+step.txt
+data.txt
+
+.env
