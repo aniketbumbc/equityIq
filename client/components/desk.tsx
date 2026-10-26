@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { formatClock, formatDuration } from "@/lib/format";
 import { applyEvent, beginResume, createRun, type RunState, type StepState } from "@/lib/run";
 import { RESEARCH_STEPS, STEP_LABEL, STEPS } from "@/lib/steps";
@@ -13,6 +13,8 @@ const EXAMPLES = [
   "What is the outlook for Nvidia this year?",
   "Should I sell Tesla stock?",
 ];
+
+const FLOW = ["Prices", "News", "Market mood", "Indicators", "Your review", "Report"];
 
 export function Desk() {
   const [run, setRun] = useState<RunState | null>(null);
@@ -157,8 +159,17 @@ export function Desk() {
 function Ask({ draft, onDraft, onStart }: { draft: string; onDraft: (value: string) => void; onStart: (query: string) => void }) {
   return (
     <main className="ask">
+      <div className="glow" aria-hidden="true">
+        <span />
+        <span />
+      </div>
       <div className="ask-inner">
-        <h1>What stock do you want researched?</h1>
+        <p className="eyebrow">
+          <i className="pulse" /> Multi-agent stock research
+        </p>
+        <h1>
+          What stock do you want <span className="grad">researched?</span>
+        </h1>
         <p className="lede">
           Ask one question. Research agents gather prices, news, market mood, and indicators, then you review the draft before the final report.
         </p>
@@ -176,12 +187,20 @@ function Ask({ draft, onDraft, onStart }: { draft: string; onDraft: (value: stri
               placeholder="Should I buy Apple stock"
               onChange={(event) => onDraft(event.target.value)}
             />
-            <button type="submit" className="btn primary">
-              Research
+            <button type="submit" className="btn primary go">
+              Research <span aria-hidden="true">→</span>
             </button>
           </div>
           <p className="fine">EquityIQ gives research, not financial advice. A run takes about a minute.</p>
         </form>
+        <ol className="flow" aria-label="How a run works">
+          {FLOW.map((item, index) => (
+            <li key={item} style={{ "--i": index } as CSSProperties}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              {item}
+            </li>
+          ))}
+        </ol>
         <div className="try">
           <span>Try</span>
           <div>
@@ -436,7 +455,7 @@ function ReviewPanel({
 function ReportCard({ run, copied, onCopy }: { run: RunState; copied: boolean; onCopy: () => void }) {
   const note = run.reviewNote || (run.facts.approved ? "Approved" : "Revised");
   return (
-    <article className="card">
+    <article className="card report-card">
       <header className="card-head">
         <span className="idx">09</span>
         <h2>Final report</h2>

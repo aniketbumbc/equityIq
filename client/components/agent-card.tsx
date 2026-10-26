@@ -199,10 +199,18 @@ function CloseChart({ bars }: { bars: { datetime: string; close: number }[] }) {
     .join(" ");
   const first = sampled[0]?.datetime.slice(0, 7) ?? "";
   const last = sampled[sampled.length - 1]?.datetime.slice(0, 7) ?? "";
+  const area = `${pad},${height - pad} ${points} ${width - pad},${height - pad}`;
   return (
     <figure className="chart">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="One-year daily close">
-        <polyline points={points} />
+        <defs>
+          <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon className="area" points={area} fill="url(#chart-fill)" />
+        <polyline points={points} pathLength={1} />
       </svg>
       <figcaption>
         <span>{first}</span>
