@@ -15,14 +15,16 @@ openai_llm = ChatOpenAI(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o-mini"
 def final_agent(state: EquityIQState) -> EquityIQState:
     """Revise the draft analysis and return the same JSON forecast shape."""
     llm_calls = state.get("llm_calls", 0) + 1
-    if state.get("approved", False):
-        review_instruction = (
-            "The user has approved the draft analysis. Preserve its decision while polishing it."
+    review_instruction = (
+        "The user has approved the draft analysis. Preserve its decision while polishing it."
+    )
+    revision_notes = [note for note in state.get("revision_notes", []) if note]
+    if revision_notes:
+        review_instruction += (
+            " Before approving, the user asked for these revisions, which the draft already applies: "
+            + "; ".join(revision_notes)
+            + ". Summarize them in human_review.feedback_applied."
         )
-    else:
-        review_instruction = f""" The user has requested changes. Apply the feedback and revise the analysis: {state.get("human_feedback","")}
-          {state.get("human_feedback","") or "Improve the draft before finalizing."}
-          """
 
     try:
         if not os.getenv("OPENAI_API_KEY"):

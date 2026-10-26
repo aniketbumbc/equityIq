@@ -89,7 +89,7 @@ function bodyFor(step: StepState, facts: Facts) {
   if (step.status === "working") {
     return (
       <div className="stack">
-        <p className="muted">{workingCopy(step.id)}</p>
+        <p className="muted">{workingCopy(step.id, facts)}</p>
         <div className="skeleton" />
         <div className="skeleton short" />
       </div>
@@ -293,7 +293,7 @@ export function summaryFor(step: StepState, facts: Facts): string {
   }
 }
 
-function workingCopy(id: StepState["id"]): string {
+function workingCopy(id: StepState["id"], facts: Facts): string {
   switch (id) {
     case "supervisor":
       return "Checking that this is a stock question and choosing agents…";
@@ -308,7 +308,9 @@ function workingCopy(id: StepState["id"]): string {
     case "technical_indicator_agent":
       return "Loading monthly RSI, monthly MACD, and daily ATR…";
     case "analyasis_agent":
-      return "Writing the forecast draft…";
+      return facts.human_feedback && !facts.approved
+        ? "Revising the draft with your feedback…"
+        : "Writing the forecast draft…";
     case "final_response_agent":
       return "Writing the final report from the draft and your decision…";
     default:

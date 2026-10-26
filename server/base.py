@@ -28,6 +28,7 @@ class EquityIQState(TypedDict):
     approval_request:str #approval request
     approved:bool #approved
     human_feedback:str #human feedback
+    revision_notes:Annotated[list[str],operator.add] #every revision request, oldest first
     final_response:str #final response
 
 

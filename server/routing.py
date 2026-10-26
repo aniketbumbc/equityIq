@@ -64,11 +64,12 @@ def route_after_agent(current_agent:str):
 
 def route_from_human(state:EquityIQState) -> str:
     """
-    An approval or revision feedback goes to the final report.
+    An approval goes to the final report.
+    Revision feedback goes back to the analysis agent, which pauses for review again.
     A rejection with no feedback stops the graph.
     """
     if state.get("approved", False):
         return "final_response_agent"
     if (state.get("human_feedback") or "").strip():
-        return "final_response_agent"
+        return "analyasis_agent"
     return END

@@ -99,6 +99,21 @@ def _summarize_indicators(value) -> str:
         return f"Missing. Technical indicators could not be summarized: {exc}"
 
 
+def _revision_request(state:EquityIQState) -> str:
+    """Ask for a revised draft when the reviewer sent feedback, empty on the first draft."""
+    feedback = (state.get("human_feedback") or "").strip()
+    if not feedback or state.get("approved", False):
+        return ""
+    return f"""
+    Revision request:
+    The user reviewed your previous draft and asked for changes.
+    Previous draft: {state.get("analysis_results","")}
+    User feedback: {feedback}
+    Revise the draft to address the feedback, using only the inputs above.
+    If the feedback asks for data that is not in the inputs, say so in data_quality.limitations instead of inventing it.
+    """
+
+
 def analyasis_agent(state:EquityIQState) -> EquityIQState:
     """
     Analyasis agent is responsible for analyzing the data and providing a final response to the user.
@@ -122,6 +137,7 @@ def analyasis_agent(state:EquityIQState) -> EquityIQState:
     {_summarize_indicators(state.get("technical_indicator",""))}
 
     Price history and indicators above are a summary. If a line says Missing, that input is unavailable. Do not invent its value.
+    {_revision_request(state)}
 
     Required Output Format
 Return only one JSON object with the same keys as the example. Do not add a prose report before or after the JSON.

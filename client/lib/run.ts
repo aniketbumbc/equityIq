@@ -4,6 +4,7 @@ import type { StreamEvent } from "./stream";
 export type Phase =
   | "running"
   | "review"
+  | "revising"
   | "finishing"
   | "report"
   | "stopped"
@@ -56,6 +57,7 @@ export type RunState = {
   review: ReviewPayload | null;
   error: string;
   reviewNote: string;
+  revision: number;
 };
 
 const FACT_KEYS: (keyof Facts)[] = [
@@ -91,6 +93,7 @@ export function createRun(query: string, now = Date.now()): RunState {
     review: null,
     error: "",
     reviewNote: "",
+    revision: 0,
   };
 }
 
@@ -113,17 +116,29 @@ export function beginResume(
   kind: "approve" | "revise" | "reject",
   now = Date.now(),
 ): RunState {
-  const reviewNote = kind === "approve" ? "Approved" : kind === "revise" ? "Revised" : "Rejected";
-  const steps = state.steps.map((step) =>
-    step.id === "review"
-      ? { ...step, status: "done" as const, finishedAt: now, startedAt: step.startedAt ?? now }
-      : step,
-  );
+  if (kind === "revise") {
+    // The draft goes back to the analysis agent, then the run pauses for review again.
+    const steps = state.steps.map((step) => {
+      if (step.id === "analyasis_agent") return { id: step.id, status: "working" as const, startedAt: now };
+      if (step.id === "review") return { id: step.id, status: "waiting" as const };
+      return step;
+    });
+    return { ...state, phase: "revising", reviewNote: "Revised", revision: state.revision + 1, steps };
+  }
+  const steps = state.steps.map((step) => {
+    if (step.id === "review") {
+      return { ...step, status: "done" as const, finishedAt: now, startedAt: step.startedAt ?? now };
+    }
+    if (step.id === "final_response_agent" && kind === "approve") {
+      return { id: step.id, status: "working" as const, startedAt: now };
+    }
+    return step;
+  });
   return {
     ...state,
     phase: "finishing",
-    reviewNote,
-    steps: kind === "reject" ? steps : promoteWorking(steps, now),
+    reviewNote: kind === "approve" ? "Approved" : "Rejected",
+    steps,
   };
 }
 
@@ -134,6 +149,7 @@ function applyNode(state: RunState, event: StreamEvent, now: number): RunState {
   }
   let steps = state.steps.map((step) => ({ ...step }));
   if (event.node === "human_in_the_loop") {
+    if (state.phase === "revising") return { ...state, facts };
     return { ...state, facts, steps: markReview(steps, now) };
   }
   const id = event.node as StepId;

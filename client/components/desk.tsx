@@ -28,7 +28,8 @@ export function Desk() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    const live = run && (run.phase === "running" || run.phase === "finishing" || run.phase === "review");
+    const live =
+      run && (run.phase === "running" || run.phase === "revising" || run.phase === "finishing" || run.phase === "review");
     if (!live) return;
     const tick = () => setNow(Date.now());
     tick();
@@ -84,6 +85,7 @@ export function Desk() {
     abortRef.current = controller;
     setConfirmReject(false);
     setOpenOverride({});
+    if (kind === "revise") setFeedback("");
     commit(beginResume(current, kind));
     try {
       await streamEvents(
@@ -248,12 +250,12 @@ function Workspace({
   const research = run.steps.filter((step) => RESEARCH_STEPS.some((item) => item.id === step.id));
   const counted = research.filter((step) => step.status !== "skipped");
   const finished = counted.filter((step) => step.status === "done" || step.status === "failed").length;
-  const busy = run.phase === "running" || run.phase === "finishing";
+  const busy = run.phase === "running" || run.phase === "revising" || run.phase === "finishing";
 
   function isOpen(step: StepState) {
     if (step.id in openOverride) return openOverride[step.id];
     if (run.phase === "running") return step.status === "done" || step.status === "failed" || step.status === "working";
-    if (run.phase === "review" || run.phase === "finishing") {
+    if (run.phase === "review" || run.phase === "revising" || run.phase === "finishing") {
       return step.status === "failed" || (step.id === "analyasis_agent" && step.status !== "skipped");
     }
     if (run.phase === "failed") return step.status === "failed";
@@ -370,7 +372,14 @@ function Evidence({
   open: boolean;
   onToggle: (id: string, open: boolean) => void;
 }) {
-  if (!open && (run.phase === "review" || run.phase === "finishing" || run.phase === "stopped" || run.phase === "report")) {
+  if (
+    !open &&
+    (run.phase === "review" ||
+      run.phase === "revising" ||
+      run.phase === "finishing" ||
+      run.phase === "stopped" ||
+      run.phase === "report")
+  ) {
     return (
       <MiniRow
         step={step}
@@ -409,9 +418,15 @@ function ReviewPanel({
 }) {
   return (
     <section className="review" id="review">
-      <p className="kicker accent">Your review</p>
+      <p className="kicker accent">Your review{run.revision ? ` · Draft ${run.revision + 1}` : ""}</p>
       <h2>{run.review?.question || "Do you approve of the draft analysis?"}</h2>
       <p className="muted">The run is paused. The evidence above stays here while you decide.</p>
+      {run.revision > 0 && run.facts.human_feedback ? (
+        <p className="note">
+          <strong>Revised for your feedback: </strong>
+          {run.facts.human_feedback}
+        </p>
+      ) : null}
       {run.review?.approval_request ? <p>{run.review.approval_request}</p> : null}
       <label htmlFor="feedback">Feedback for a revision</label>
       <textarea
@@ -420,7 +435,10 @@ function ReviewPanel({
         placeholder="For example: make the forecast horizon 30 days and weigh the latest news more heavily."
         onChange={(event) => onFeedback(event.target.value)}
       />
-      <p className="fine">Required only for Request a revision. Approve and Reject ignore this box.</p>
+      <p className="fine">
+        Required only for Request a revision, which rewrites the draft and brings you back here. Approve and Reject ignore
+        this box.
+      </p>
       <div className="actions">
         <button type="button" className="btn primary" onClick={() => onResume("approve")}>
           Approve
@@ -453,7 +471,9 @@ function ReviewPanel({
 }
 
 function ReportCard({ run, copied, onCopy }: { run: RunState; copied: boolean; onCopy: () => void }) {
-  const note = run.reviewNote || (run.facts.approved ? "Approved" : "Revised");
+  const note = run.revision
+    ? `Approved after ${run.revision} ${run.revision === 1 ? "revision" : "revisions"}`
+    : run.reviewNote || "Approved";
   return (
     <article className="card report-card">
       <header className="card-head">
@@ -554,6 +574,8 @@ function railStatus(run: RunState, finished: number, total: number) {
   switch (run.phase) {
     case "review":
       return "Paused for your review";
+    case "revising":
+      return `Writing draft ${run.revision + 1} from your feedback`;
     case "finishing":
       return run.reviewNote === "Rejected" ? "Stopping the run" : "Writing the final report";
     case "report":

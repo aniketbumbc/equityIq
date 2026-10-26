@@ -39,7 +39,7 @@ builder.add_conditional_edges("analyasis_agent", route_after_agent("analyasis_ag
 builder.add_conditional_edges(
     "human_in_the_loop",
     route_from_human,
-    ["final_response_agent", END],
+    ["final_response_agent", "analyasis_agent", END],
 )
 builder.add_edge("guardrail_blocked", END)
 builder.add_edge("final_response_agent", END)
