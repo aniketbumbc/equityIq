@@ -1,20 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatClock, formatDuration } from "@/lib/format";
 import { applyEvent, beginResume, createRun, type RunState, type StepState } from "@/lib/run";
 import { RESEARCH_STEPS, STEP_LABEL, STEPS } from "@/lib/steps";
 import { streamEvents } from "@/lib/stream";
 import { AgentCard, MiniRow } from "./agent-card";
+import { Header } from "./header";
+import { Landing } from "./landing";
 import { reportPlainText, ReportBody } from "./report";
-
-const EXAMPLES = [
-  "Is Microsoft overvalued right now?",
-  "What is the outlook for Nvidia this year?",
-  "Should I sell Tesla stock?",
-];
-
-const FLOW = ["Prices", "News", "Market mood", "Indicators", "Your review", "Report"];
 
 export function Desk() {
   const [run, setRun] = useState<RunState | null>(null);
@@ -112,20 +106,7 @@ export function Desk() {
 
   return (
     <div className="desk">
-      <header className="top">
-        <div className="top-inner">
-          <div className="brand">
-            <img className="mark" src="/logo.png" alt="" width={28} height={28} />
-            <span>EquityIQ</span>
-          </div>
-          <p className="sub">Stock research desk</p>
-          {run ? (
-            <button type="button" className="btn ghost" onClick={reset}>
-              New question
-            </button>
-          ) : null}
-        </div>
-      </header>
+      <Header run={run} onReset={reset} />
       {run ? (
         <Workspace
           run={run}
@@ -152,69 +133,9 @@ export function Desk() {
           }}
         />
       ) : (
-        <Ask draft={draft} onDraft={setDraft} onStart={start} />
+        <Landing draft={draft} onDraft={setDraft} onStart={start} />
       )}
     </div>
-  );
-}
-
-function Ask({ draft, onDraft, onStart }: { draft: string; onDraft: (value: string) => void; onStart: (query: string) => void }) {
-  return (
-    <main className="ask">
-      <div className="glow" aria-hidden="true">
-        <span />
-        <span />
-      </div>
-      <div className="ask-inner">
-        <p className="eyebrow">
-          <i className="pulse" /> Multi-agent stock research
-        </p>
-        <h1>
-          What stock do you want <span className="grad">researched?</span>
-        </h1>
-        <p className="lede">
-          Ask one question. Research agents gather prices, news, market mood, and indicators, then you review the draft before the final report.
-        </p>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            onStart(draft.trim() || "Should I buy Apple stock");
-          }}
-        >
-          <label htmlFor="question">Your question</label>
-          <div className="ask-row">
-            <input
-              id="question"
-              value={draft}
-              placeholder="Should I buy Apple stock"
-              onChange={(event) => onDraft(event.target.value)}
-            />
-            <button type="submit" className="btn primary go">
-              Research <span aria-hidden="true">→</span>
-            </button>
-          </div>
-          <p className="fine">EquityIQ gives research, not financial advice. A run takes about a minute.</p>
-        </form>
-        <ol className="flow" aria-label="How a run works">
-          {FLOW.map((item, index) => (
-            <li key={item} style={{ "--i": index } as CSSProperties}>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              {item}
-            </li>
-          ))}
-        </ol>
-        <div className="try">
-          <span>Try</span>
-          <div>
-            {EXAMPLES.map((example) => (
-              <button key={example} type="button" className="chip" onClick={() => onDraft(example)}>
-                {example}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </main>
   );
 }
 
