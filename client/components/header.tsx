@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { RunState } from "@/lib/run";
 import { RESEARCH_STEPS } from "@/lib/steps";
+import { HowItWorks } from "./how-it-works";
 
 type Tone = "live" | "wait" | "ok" | "stop";
 
 export function Header({ run, onReset }: { run: RunState | null; onReset: () => void }) {
   const [scrolled, setScrolled] = useState(false);
+  const [showHow, setShowHow] = useState(false);
+  const closeHow = useCallback(() => setShowHow(false), []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -43,9 +46,9 @@ export function Header({ run, onReset }: { run: RunState | null; onReset: () => 
             </>
           ) : (
             <>
-              <a className="top-link" href="#features">
+              <button type="button" className="top-link" onClick={() => setShowHow(true)}>
                 How it works
-              </a>
+              </button>
               <button
                 type="button"
                 className="btn primary small"
@@ -66,6 +69,7 @@ export function Header({ run, onReset }: { run: RunState | null; onReset: () => 
           <span style={{ width: `${status.progress * 100}%` }} />
         </div>
       ) : null}
+      {showHow ? <HowItWorks onClose={closeHow} /> : null}
     </header>
   );
 }
