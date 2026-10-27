@@ -445,6 +445,20 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); box-sh
 @keyframes ring { 50% { box-shadow: 0 0 0 6px rgba(232, 111, 26, 0.1); } }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 
+/* Review auto-approve countdown */
+.auto { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #f6dcc3; border-radius: 10px; background: #fff8f1; }
+.auto.off { margin: 0; border-color: var(--line); background: var(--bg); color: var(--muted); font-size: 13px; }
+.auto-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; }
+.auto-row > span { display: inline-flex; align-items: center; gap: 8px; }
+.auto-row strong { min-width: 4ch; color: var(--accent-deep); font-size: 15px; font-variant-numeric: tabular-nums; }
+.auto .text-btn { padding: 0; }
+.auto .fine { margin: 0; }
+.auto-bar { height: 6px; border-radius: 3px; background: #f6e3d1; overflow: hidden; }
+.auto-bar span { display: block; height: 100%; border-radius: 3px; background: var(--accent); transition: width 1s linear; }
+.auto.soon { border-color: var(--accent); }
+.auto.soon .auto-bar span { background: var(--accent-deep); }
+.auto.soon .auto-row strong { animation: blink 1s ease-in-out infinite; }
+
 /* Landing */
 .landing { position: relative; overflow: hidden; min-height: calc(100vh - 61px); padding: 64px 0 88px; }
 .grid-bg {

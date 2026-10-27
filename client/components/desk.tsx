@@ -10,6 +10,9 @@ import { Header } from "./header";
 import { Landing } from "./landing";
 import { reportPlainText, ReportBody } from "./report";
 
+// With no decision within this time, the draft is approved automatically.
+const AUTO_APPROVE_MS = 2 * 60 * 1000;
+
 export function Desk() {
   const [run, setRun] = useState<RunState | null>(null);
   const [draft, setDraft] = useState("");
@@ -18,8 +21,23 @@ export function Desk() {
   const [openOverride, setOpenOverride] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(0);
+  const [autoStopped, setAutoStopped] = useState(false);
   const runRef = useRef<RunState | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const resumeRef = useRef(resume);
+
+  useEffect(() => {
+    resumeRef.current = resume;
+  });
+
+  const reviewStartedAt =
+    run?.phase === "review" ? run.steps.find((step) => step.id === "review")?.startedAt : undefined;
+  useEffect(() => {
+    if (!reviewStartedAt || autoStopped) return;
+    const wait = Math.max(0, reviewStartedAt + AUTO_APPROVE_MS - Date.now());
+    const timer = window.setTimeout(() => resumeRef.current("approve", true), wait);
+    return () => window.clearTimeout(timer);
+  }, [reviewStartedAt, autoStopped]);
 
   useEffect(() => {
     const live =
@@ -43,6 +61,7 @@ export function Desk() {
     setConfirmReject(false);
     setOpenOverride({});
     setCopied(false);
+    setAutoStopped(false);
   }
 
   async function start(query: string) {
@@ -55,6 +74,7 @@ export function Desk() {
     setFeedback("");
     setConfirmReject(false);
     setOpenOverride({});
+    setAutoStopped(false);
     commit(createRun(question));
     try {
       await streamEvents("/api/analyze", { query: question }, (event) => {
@@ -70,7 +90,7 @@ export function Desk() {
     }
   }
 
-  async function resume(kind: "approve" | "revise" | "reject") {
+  async function resume(kind: "approve" | "revise" | "reject", auto = false) {
     const current = runRef.current;
     if (!current?.threadId) return;
     if (kind === "revise" && !feedback.trim()) return;
@@ -79,8 +99,10 @@ export function Desk() {
     abortRef.current = controller;
     setConfirmReject(false);
     setOpenOverride({});
+    setAutoStopped(false);
     if (kind === "revise") setFeedback("");
-    commit(beginResume(current, kind));
+    const next = beginResume(current, kind);
+    commit(auto ? { ...next, reviewNote: "Auto-approved" } : next);
     try {
       await streamEvents(
         "/api/analyze/resume",
@@ -115,8 +137,16 @@ export function Desk() {
           confirmReject={confirmReject}
           copied={copied}
           openOverride={openOverride}
-          onFeedback={setFeedback}
-          onConfirmReject={setConfirmReject}
+          autoStopped={autoStopped}
+          onStopAuto={() => setAutoStopped(true)}
+          onFeedback={(value) => {
+            setFeedback(value);
+            if (value.trim()) setAutoStopped(true);
+          }}
+          onConfirmReject={(value) => {
+            setConfirmReject(value);
+            if (value) setAutoStopped(true);
+          }}
           onResume={resume}
           onStart={start}
           onToggle={(id, open) => setOpenOverride((prev) => ({ ...prev, [id]: open }))}
@@ -146,6 +176,8 @@ function Workspace({
   confirmReject,
   copied,
   openOverride,
+  autoStopped,
+  onStopAuto,
   onFeedback,
   onConfirmReject,
   onResume,
@@ -160,6 +192,8 @@ function Workspace({
   confirmReject: boolean;
   copied: boolean;
   openOverride: Record<string, boolean>;
+  autoStopped: boolean;
+  onStopAuto: () => void;
   onFeedback: (value: string) => void;
   onConfirmReject: (value: boolean) => void;
   onResume: (kind: "approve" | "revise" | "reject") => void;
@@ -270,6 +304,9 @@ function Workspace({
             {run.phase === "review" ? (
               <ReviewPanel
                 run={run}
+                now={now}
+                autoStopped={autoStopped}
+                onStopAuto={onStopAuto}
                 feedback={feedback}
                 confirmReject={confirmReject}
                 onFeedback={onFeedback}
@@ -326,6 +363,9 @@ function Evidence({
 
 function ReviewPanel({
   run,
+  now,
+  autoStopped,
+  onStopAuto,
   feedback,
   confirmReject,
   onFeedback,
@@ -333,6 +373,9 @@ function ReviewPanel({
   onResume,
 }: {
   run: RunState;
+  now: number;
+  autoStopped: boolean;
+  onStopAuto: () => void;
   feedback: string;
   confirmReject: boolean;
   onFeedback: (value: string) => void;
@@ -344,6 +387,7 @@ function ReviewPanel({
       <p className="kicker accent">Your review{run.revision ? ` · Draft ${run.revision + 1}` : ""}</p>
       <h2>{run.review?.question || "Do you approve of the draft analysis?"}</h2>
       <p className="muted">The run is paused. The evidence above stays here while you decide.</p>
+      <AutoApprove run={run} now={now} stopped={autoStopped} onStop={onStopAuto} />
       {run.revision > 0 && run.facts.human_feedback ? (
         <div className="note">
           <p>
@@ -401,17 +445,58 @@ function ReviewPanel({
   );
 }
 
+function AutoApprove({
+  run,
+  now,
+  stopped,
+  onStop,
+}: {
+  run: RunState;
+  now: number;
+  stopped: boolean;
+  onStop: () => void;
+}) {
+  if (stopped) {
+    return <p className="auto off">Auto-approve is off. Take your time.</p>;
+  }
+  const startedAt = run.steps.find((step) => step.id === "review")?.startedAt ?? now;
+  const left = Math.max(0, startedAt + AUTO_APPROVE_MS - Math.max(now, startedAt));
+  const seconds = Math.ceil(left / 1000);
+  return (
+    <div className={`auto${seconds <= 30 ? " soon" : ""}`} role="timer" aria-live="off">
+      <div className="auto-row">
+        <span>
+          <i className="pulse" /> Auto-approving in <strong className="mono">{seconds}s</strong>
+        </span>
+        <button type="button" className="text-btn" onClick={onStop}>
+          Stop timer
+        </button>
+      </div>
+      <div className="auto-bar" aria-hidden="true">
+        <span style={{ width: `${(left / AUTO_APPROVE_MS) * 100}%` }} />
+      </div>
+      <p className="fine">
+        If you don&apos;t decide, the draft is approved and the final report is written. Typing feedback or choosing
+        Reject stops the timer.
+      </p>
+    </div>
+  );
+}
+
 function ReportCard({ run, copied, onCopy }: { run: RunState; copied: boolean; onCopy: () => void }) {
+  const approved = run.reviewNote === "Auto-approved" ? "Auto-approved" : "Approved";
   const note = run.revision
-    ? `Approved after ${run.revision} ${run.revision === 1 ? "revision" : "revisions"}`
-    : run.reviewNote || "Approved";
+    ? `${approved} after ${run.revision} ${run.revision === 1 ? "revision" : "revisions"}`
+    : approved;
   return (
     <article className="card report-card">
       <header className="card-head">
         <span className="idx">09</span>
         <h2>Final report</h2>
         {run.facts.symbol ? <span className="ticker">{run.facts.symbol}</span> : null}
-        <span className="tag ok-tag">Reviewed by a person · {note}</span>
+        <span className="tag ok-tag">
+          {run.reviewNote === "Auto-approved" ? `No response in ${AUTO_APPROVE_MS / 60000} min` : "Reviewed by a person"} · {note}
+        </span>
       </header>
       <div className="card-body">
         <ReportBody raw={String(run.facts.final_response || "")} plainNote="Shown as plain text because the report was not JSON." />
