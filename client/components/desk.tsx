@@ -57,6 +57,7 @@ export function Desk() {
   function reset() {
     abortRef.current?.abort();
     commit(null);
+    setDraft("");
     setFeedback("");
     setConfirmReject(false);
     setOpenOverride({});
