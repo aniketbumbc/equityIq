@@ -56,10 +56,26 @@ export function Chat() {
   const [tools, setTools] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
   const turnId = useRef(0);
+  const sendRef = useRef(send);
+  const askedFromUrl = useRef(false);
 
   const busy = run?.phase === "running" || run?.phase === "revising" || run?.phase === "finishing";
   const reviewing = run?.phase === "review";
   const finishedSteps = run?.steps.filter((step) => step.status === "done" || step.status === "failed").length ?? 0;
+
+  useEffect(() => {
+    sendRef.current = send;
+  });
+
+  useEffect(() => {
+    // A question from the landing page arrives as ?q=; ask it once, then drop it so a refresh doesn't re-run it.
+    if (askedFromUrl.current) return;
+    askedFromUrl.current = true;
+    const query = new URLSearchParams(window.location.search).get("q")?.trim();
+    if (!query) return;
+    window.history.replaceState(null, "", "/chat");
+    sendRef.current(query, []);
+  }, []);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });

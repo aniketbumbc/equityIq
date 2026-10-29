@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatClock, formatDuration } from "@/lib/format";
 import type { RunState, StepState } from "@/lib/run";
@@ -11,6 +12,7 @@ import { Landing } from "./landing";
 import { reportPlainText, ReportBody } from "./report";
 
 export function Desk() {
+  const router = useRouter();
   const research = useResearch();
   const { run } = research;
   const [draft, setDraft] = useState("");
@@ -67,7 +69,11 @@ export function Desk() {
           }}
         />
       ) : (
-        <Landing draft={draft} onDraft={setDraft} onStart={start} />
+        <Landing
+          draft={draft}
+          onDraft={setDraft}
+          onStart={(query) => router.push(`/chat?q=${encodeURIComponent(query.trim())}`)}
+        />
       )}
     </div>
   );
