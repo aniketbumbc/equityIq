@@ -240,6 +240,8 @@ html { scroll-behavior: smooth; }
 .top.is-scrolled { background: rgba(255, 255, 255, 0.86); box-shadow: 0 8px 24px -18px rgba(28, 43, 34, 0.4); }
 .top-inner { gap: 12px; }
 .brand {
+  color: var(--ink);
+  text-decoration: none;
   border: 0;
   background: transparent;
   padding: 0;

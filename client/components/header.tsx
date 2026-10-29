@@ -32,14 +32,15 @@ export function Header({
   return (
     <header className={`top${scrolled ? " is-scrolled" : ""}`}>
       <div className="top-inner">
-        <button type="button" className="brand" onClick={onReset} aria-label="EquityIQ home">
+        {/* Always leads to the landing page; on the landing page it also clears the current run. */}
+        <Link href="/" className="brand" onClick={onReset} aria-label="EquityIQ home">
           <span className="mark-tile">
             <img className="mark" src="/logo.png" alt="" width={28} height={28} />
           </span>
           <span className="wordmark">
             Equity<span className="grad">IQ</span>
           </span>
-        </button>
+        </Link>
         <span className="sub">{page === "chat" ? "Research chat" : "Stock research desk"}</span>
 
         <div className="top-actions">
