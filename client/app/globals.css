@@ -296,6 +296,7 @@ html { scroll-behavior: smooth; }
 }
 .top-link:hover::after { transform: scaleX(1); }
 .btn.small { padding: 7px 14px; font-size: 14px; }
+a.btn { text-decoration: none; }
 .top .btn.ghost { background: rgba(255, 255, 255, 0.7); }
 
 .run-pill {
@@ -340,7 +341,7 @@ html { scroll-behavior: smooth; }
 @keyframes blink { 50% { opacity: 0.3; } }
 
 @media (max-width: 720px) {
-  .sub, .top-link:not(.nav) { display: none; }
+  .sub, .top-link { display: none; }
   .run-pill { font-size: 12px; padding: 4px 10px; }
 }
 @media (max-width: 460px) {

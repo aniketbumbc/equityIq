@@ -57,7 +57,6 @@ export function Chat() {
   const endRef = useRef<HTMLDivElement>(null);
   const turnId = useRef(0);
   const sendRef = useRef(send);
-  const askedFromUrl = useRef(false);
 
   const busy = run?.phase === "running" || run?.phase === "revising" || run?.phase === "finishing";
   const reviewing = run?.phase === "review";
@@ -68,9 +67,8 @@ export function Chat() {
   });
 
   useEffect(() => {
-    // A question from the landing page arrives as ?q=; ask it once, then drop it so a refresh doesn't re-run it.
-    if (askedFromUrl.current) return;
-    askedFromUrl.current = true;
+    // A question from the landing page arrives as ?q=. Dropping it from the URL right away means a refresh, a
+    // second effect run, or Next showing this kept-alive page again won't ask it twice.
     const query = new URLSearchParams(window.location.search).get("q")?.trim();
     if (!query) return;
     window.history.replaceState(null, "", "/chat");

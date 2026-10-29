@@ -59,20 +59,20 @@ export function Header({
               <button type="button" className="top-link" onClick={() => setShowHow(true)}>
                 How it works
               </button>
-              <Link className="top-link nav" href={page === "chat" ? "/" : "/chat"}>
-                {page === "chat" ? "Classic view" : "Chat"}
-              </Link>
-              <button
-                type="button"
-                className="btn primary small"
-                onClick={() => {
-                  const input = document.getElementById("question");
-                  input?.scrollIntoView({ block: "center" });
-                  input?.focus({ preventScroll: true });
-                }}
-              >
-                Start research
-              </button>
+              {page === "chat" ? (
+                <button
+                  type="button"
+                  className="btn primary small"
+                  // Not getElementById: Next keeps the landing page mounted (hidden), and it has a #question too.
+                  onClick={() => document.querySelector<HTMLTextAreaElement>(".composer textarea")?.focus()}
+                >
+                  Start research
+                </button>
+              ) : (
+                <Link className="btn primary small" href="/chat">
+                  Start research
+                </Link>
+              )}
             </>
           )}
         </div>
