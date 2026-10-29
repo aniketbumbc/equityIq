@@ -21,6 +21,7 @@ class EquityIQState(TypedDict):
     guardrails_allowed:bool #guardrails allowed
     guardrails_reason:str #reason for guardrails allowed
     selected_agents:list[str] #selected agents
+    requested_agents:list[str] #research tools the user picked; empty lets the supervisor choose
     supervisor_reasoning:str #reasoning for the supervisor's decision
     query_constraints:dict[str,Any] #query constraints
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { RunState } from "@/lib/run";
 import { RESEARCH_STEPS } from "@/lib/steps";
@@ -7,7 +8,15 @@ import { HowItWorks } from "./how-it-works";
 
 type Tone = "live" | "wait" | "ok" | "stop";
 
-export function Header({ run, onReset }: { run: RunState | null; onReset: () => void }) {
+export function Header({
+  run,
+  onReset,
+  page = "desk",
+}: {
+  run: RunState | null;
+  onReset: () => void;
+  page?: "desk" | "chat";
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [showHow, setShowHow] = useState(false);
   const closeHow = useCallback(() => setShowHow(false), []);
@@ -31,7 +40,7 @@ export function Header({ run, onReset }: { run: RunState | null; onReset: () => 
             Equity<span className="grad">IQ</span>
           </span>
         </button>
-        <span className="sub">Stock research desk</span>
+        <span className="sub">{page === "chat" ? "Research chat" : "Stock research desk"}</span>
 
         <div className="top-actions">
           {status ? (
@@ -41,7 +50,7 @@ export function Header({ run, onReset }: { run: RunState | null; onReset: () => 
                 {status.label}
               </span>
               <button type="button" className="btn ghost" onClick={onReset}>
-                New question
+                {page === "chat" ? "New chat" : "New question"}
               </button>
             </>
           ) : (
@@ -49,6 +58,9 @@ export function Header({ run, onReset }: { run: RunState | null; onReset: () => 
               <button type="button" className="top-link" onClick={() => setShowHow(true)}>
                 How it works
               </button>
+              <Link className="top-link nav" href={page === "chat" ? "/" : "/chat"}>
+                {page === "chat" ? "Classic view" : "Chat"}
+              </Link>
               <button
                 type="button"
                 className="btn primary small"

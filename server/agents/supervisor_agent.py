@@ -9,6 +9,13 @@ SELECTABLE_AGENTS = [
     for name in AGNET_ORDER
     if name not in {"human_in_the_loop", "final_response_agent"}
 ]
+# Research tools a user can pick directly. The company name and analysis agents always run with them.
+USER_TOOLS = [
+    "historic_data_agent",
+    "company_news_agent",
+    "market_sentiment_agent",
+    "technical_indicator_agent",
+]
 
 
 def _as_bool(value, default: bool = True) -> bool:
@@ -82,6 +89,18 @@ def supervisor(state: EquityIQState) -> EquityIQState:
             "supervisor_reasoning": reason,
             "final_response": reason,
             "messages": [AIMessage(content=f"Guardrails validation failed. {reason}")],
+            "llm_calls": llm_calls,
+        }
+
+    requested = [name for name in USER_TOOLS if name in (state.get("requested_agents") or [])]
+    if requested:
+        return {
+            "guardrails_allowed": True,
+            "guardrails_reason": guardrails_reason,
+            "selected_agents": ["company_name_agent", *requested, "analyasis_agent"],
+            "query_constraints": _empty_constraints(),
+            "supervisor_reasoning": "You chose the research tools for this question.",
+            "messages": [AIMessage(content=f"Supervisor used the tools the user chose: {requested}.")],
             "llm_calls": llm_calls,
         }
 

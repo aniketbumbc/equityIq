@@ -42,6 +42,7 @@ PUBLIC_KEYS = (
 
 class AnalyzeRequest(BaseModel):
     query: str = Field(..., min_length=1, examples=["Should I buy Apple stock"])
+    tools: list[str] = Field(default_factory=list, examples=[["historic_data_agent", "company_news_agent"]])
 
 
 class ResumeRequest(BaseModel):
@@ -134,6 +135,7 @@ def analyze(body: AnalyzeRequest):
     return _sse(_stream(
         {
             "user_query": body.query.strip(),
+            "requested_agents": body.tools,
             "llm_calls": 0,
             "messages": [],
         },

@@ -1,130 +1,39 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { formatClock, formatDuration } from "@/lib/format";
-import { applyEvent, beginResume, createRun, type RunState, type StepState } from "@/lib/run";
+import type { RunState, StepState } from "@/lib/run";
 import { RESEARCH_STEPS, STEP_LABEL, STEPS } from "@/lib/steps";
-import { streamEvents } from "@/lib/stream";
+import { AUTO_APPROVE_MS, useResearch, type ResumeKind } from "@/lib/use-research";
 import { AgentCard, MiniRow } from "./agent-card";
 import { Header } from "./header";
 import { Landing } from "./landing";
 import { reportPlainText, ReportBody } from "./report";
 
-// With no decision within this time, the draft is approved automatically.
-const AUTO_APPROVE_MS = 2 * 60 * 1000;
-
 export function Desk() {
-  const [run, setRun] = useState<RunState | null>(null);
+  const research = useResearch();
+  const { run } = research;
   const [draft, setDraft] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [confirmReject, setConfirmReject] = useState(false);
   const [openOverride, setOpenOverride] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState(false);
-  const [now, setNow] = useState(0);
-  const [autoStopped, setAutoStopped] = useState(false);
-  const runRef = useRef<RunState | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const resumeRef = useRef(resume);
-
-  useEffect(() => {
-    resumeRef.current = resume;
-  });
-
-  const reviewStartedAt =
-    run?.phase === "review" ? run.steps.find((step) => step.id === "review")?.startedAt : undefined;
-  useEffect(() => {
-    if (!reviewStartedAt || autoStopped) return;
-    const wait = Math.max(0, reviewStartedAt + AUTO_APPROVE_MS - Date.now());
-    const timer = window.setTimeout(() => resumeRef.current("approve", true), wait);
-    return () => window.clearTimeout(timer);
-  }, [reviewStartedAt, autoStopped]);
-
-  useEffect(() => {
-    const live =
-      run && (run.phase === "running" || run.phase === "revising" || run.phase === "finishing" || run.phase === "review");
-    if (!live) return;
-    const tick = () => setNow(Date.now());
-    tick();
-    const timer = window.setInterval(tick, 1000);
-    return () => window.clearInterval(timer);
-  }, [run]);
-
-  function commit(next: RunState | null) {
-    runRef.current = next;
-    setRun(next);
-  }
 
   function reset() {
-    abortRef.current?.abort();
-    commit(null);
+    research.reset();
     setDraft("");
-    setFeedback("");
-    setConfirmReject(false);
     setOpenOverride({});
     setCopied(false);
-    setAutoStopped(false);
   }
 
-  async function start(query: string) {
-    const question = query.trim();
-    if (!question) return;
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setDraft(question);
-    setFeedback("");
-    setConfirmReject(false);
+  function start(query: string) {
+    if (!query.trim()) return;
+    setDraft(query.trim());
     setOpenOverride({});
-    setAutoStopped(false);
-    commit(createRun(question));
-    try {
-      await streamEvents("/api/analyze", { query: question }, (event) => {
-        const current = runRef.current;
-        if (!current) return;
-        commit(applyEvent(current, event));
-      }, controller.signal);
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      const current = runRef.current;
-      if (!current) return;
-      commit(applyEvent(current, { status: "error", detail: errorText(error) }));
-    }
+    research.start(query);
   }
 
-  async function resume(kind: "approve" | "revise" | "reject", auto = false) {
-    const current = runRef.current;
-    if (!current?.threadId) return;
-    if (kind === "revise" && !feedback.trim()) return;
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setConfirmReject(false);
+  function resume(kind: ResumeKind) {
     setOpenOverride({});
-    setAutoStopped(false);
-    if (kind === "revise") setFeedback("");
-    const next = beginResume(current, kind);
-    commit(auto ? { ...next, reviewNote: "Auto-approved" } : next);
-    try {
-      await streamEvents(
-        "/api/analyze/resume",
-        {
-          thread_id: current.threadId,
-          approved: kind === "approve",
-          feedback: kind === "revise" ? feedback.trim() : "",
-        },
-        (event) => {
-          const latest = runRef.current;
-          if (!latest) return;
-          commit(applyEvent(latest, event));
-        },
-        controller.signal,
-      );
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      const latest = runRef.current;
-      if (!latest) return;
-      commit(applyEvent(latest, { status: "error", detail: errorText(error) }));
-    }
+    research.resume(kind);
   }
 
   return (
@@ -133,21 +42,15 @@ export function Desk() {
       {run ? (
         <Workspace
           run={run}
-          now={now}
-          feedback={feedback}
-          confirmReject={confirmReject}
+          now={research.now}
+          feedback={research.feedback}
+          confirmReject={research.confirmReject}
           copied={copied}
           openOverride={openOverride}
-          autoStopped={autoStopped}
-          onStopAuto={() => setAutoStopped(true)}
-          onFeedback={(value) => {
-            setFeedback(value);
-            if (value.trim()) setAutoStopped(true);
-          }}
-          onConfirmReject={(value) => {
-            setConfirmReject(value);
-            if (value) setAutoStopped(true);
-          }}
+          autoStopped={research.autoStopped}
+          onStopAuto={research.stopAuto}
+          onFeedback={research.setFeedback}
+          onConfirmReject={research.setConfirmReject}
           onResume={resume}
           onStart={start}
           onToggle={(id, open) => setOpenOverride((prev) => ({ ...prev, [id]: open }))}
@@ -197,7 +100,7 @@ function Workspace({
   onStopAuto: () => void;
   onFeedback: (value: string) => void;
   onConfirmReject: (value: boolean) => void;
-  onResume: (kind: "approve" | "revise" | "reject") => void;
+  onResume: (kind: ResumeKind) => void;
   onStart: (query: string) => void;
   onToggle: (id: string, open: boolean) => void;
   onExpand: () => void;
@@ -381,7 +284,7 @@ function ReviewPanel({
   confirmReject: boolean;
   onFeedback: (value: string) => void;
   onConfirmReject: (value: boolean) => void;
-  onResume: (kind: "approve" | "revise" | "reject") => void;
+  onResume: (kind: ResumeKind) => void;
 }) {
   return (
     <section className="review" id="review">
@@ -446,7 +349,7 @@ function ReviewPanel({
   );
 }
 
-function AutoApprove({
+export function AutoApprove({
   run,
   now,
   stopped,
@@ -484,7 +387,7 @@ function AutoApprove({
   );
 }
 
-function ReportCard({ run, copied, onCopy }: { run: RunState; copied: boolean; onCopy: () => void }) {
+export function ReportCard({ run, copied, onCopy }: { run: RunState; copied: boolean; onCopy: () => void }) {
   const approved = run.reviewNote === "Auto-approved" ? "Auto-approved" : "Approved";
   const note = run.revision
     ? `${approved} after ${run.revision} ${run.revision === 1 ? "revision" : "revisions"}`
@@ -514,7 +417,7 @@ function ReportCard({ run, copied, onCopy }: { run: RunState; copied: boolean; o
   );
 }
 
-function FinalWorking({ run }: { run: RunState }) {
+export function FinalWorking({ run }: { run: RunState }) {
   const step = run.steps.find((item) => item.id === "final_response_agent");
   if (!step || run.reviewNote === "Rejected") {
     return <p className="note">Stopping this run…</p>;
@@ -579,7 +482,7 @@ function Stopped({ run, onStart }: { run: RunState; onStart: (query: string) => 
   );
 }
 
-function Dot({ status }: { status: StepState["status"] }) {
+export function Dot({ status }: { status: StepState["status"] }) {
   if (status === "done") return <span className="dot ok">✓</span>;
   if (status === "failed") return <span className="dot fail">!</span>;
   if (status === "working") return <span className="dot run" />;
@@ -587,7 +490,7 @@ function Dot({ status }: { status: StepState["status"] }) {
   return <span className="dot wait" />;
 }
 
-function railStatus(run: RunState, finished: number, total: number) {
+export function railStatus(run: RunState, finished: number, total: number) {
   switch (run.phase) {
     case "review":
       return "Paused for your review";
@@ -627,11 +530,7 @@ function meterClass(status: StepState["status"]) {
   return "meter";
 }
 
-function indexOf(id: string) {
+export function indexOf(id: string) {
   const index = STEPS.findIndex((step) => step.id === id);
   return String(index + 1).padStart(2, "0");
-}
-
-function errorText(error: unknown) {
-  return error instanceof Error ? error.message : "The request failed.";
 }
