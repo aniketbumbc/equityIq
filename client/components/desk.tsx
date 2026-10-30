@@ -72,7 +72,11 @@ export function Desk() {
         <Landing
           draft={draft}
           onDraft={setDraft}
-          onStart={(query) => router.push(`/chat?q=${encodeURIComponent(query.trim())}`)}
+          onStart={(query) => {
+            // Next keeps this page mounted while hidden, so clear the box or the old question is still there on return.
+            setDraft("");
+            router.push(`/chat?q=${encodeURIComponent(query.trim())}`);
+          }}
         />
       )}
     </div>
