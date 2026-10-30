@@ -11,6 +11,10 @@
   --accent-deep: #c4560c;
   --ok: #3caf62;
   --down: #c2410c;
+  --bad: #d92d20;
+  --bad-deep: #a8190f;
+  --bad-soft: #fef1f0;
+  --bad-line: #f6c4bf;
   --chip: #e7f6e8;
   --shadow: 0 1px 2px rgba(28, 43, 34, 0.06);
   --sans: var(--font-inter), "Segoe UI", sans-serif;
@@ -104,7 +108,7 @@ input:focus, textarea:focus, button:focus-visible, a:focus-visible {
 .meter { height: 4px; border-radius: 2px; background: var(--line-soft); }
 .meter.done { background: var(--ink); }
 .meter.run { background: var(--accent); }
-.meter.fail { background: var(--down); }
+.meter.fail { background: var(--bad); }
 .step { display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: center; padding: 7px 0; font-size: 14px; }
 .step.split { margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .step em { font-style: normal; color: var(--muted); font-family: var(--mono); font-size: 12px; }
@@ -115,7 +119,7 @@ input:focus, textarea:focus, button:focus-visible, a:focus-visible {
   font-size: 10px; color: white;
 }
 .dot.ok { background: var(--ok); }
-.dot.fail { background: var(--ink); }
+.dot.fail { background: var(--bad); }
 .dot.wait, .dot.skip { background: transparent; border: 1.5px solid var(--line); }
 .dot.skip { border-style: dashed; }
 .dot.run { border: 2px solid var(--accent); border-top-color: transparent; animation: spin 0.8s linear infinite; }
@@ -134,7 +138,7 @@ input:focus, textarea:focus, button:focus-visible, a:focus-visible {
   box-shadow: var(--shadow);
 }
 .card.is-working { border-color: #f0c9a4; }
-.card.is-failed, .banner { border-color: var(--ink); }
+.banner { border-color: var(--ink); }
 .card-head, .card-body, .banner, .review { padding: 16px 18px; }
 .card-head { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line-soft); }
 .card-head h2, .banner h2, .review h2 { margin: 0; font-size: 17px; font-weight: 650; }
@@ -149,7 +153,7 @@ input:focus, textarea:focus, button:focus-visible, a:focus-visible {
 .ok-tag { font-family: var(--sans); background: var(--chip); border: 0; }
 .status { margin-left: auto; color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
 .status.ok { color: var(--ok); }
-.status.fail { color: var(--ink); font-weight: 650; }
+.status.fail { color: var(--bad); font-weight: 650; }
 .status.run { color: var(--accent); }
 .spin {
   width: 12px; height: 12px; border-radius: 50%;
@@ -196,8 +200,10 @@ input:focus, textarea:focus, button:focus-visible, a:focus-visible {
 .err {
   margin: 0;
   padding: 12px;
-  background: var(--bg);
+  border: 1px solid var(--bad-line);
   border-radius: 8px;
+  background: var(--bad-soft);
+  color: var(--bad-deep);
   white-space: pre-wrap;
   font-family: var(--mono);
   font-size: 13px;
@@ -447,6 +453,23 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); box-sh
 @keyframes glow { 50% { box-shadow: 0 0 0 4px rgba(232, 111, 26, 0.12), var(--shadow-lift); } }
 @keyframes ring { 50% { box-shadow: 0 0 0 6px rgba(232, 111, 26, 0.1); } }
 @keyframes draw { to { stroke-dashoffset: 0; } }
+
+/* Errors and missing data */
+.missing, .stat.missing { color: var(--bad); }
+.card.is-failed { border-color: var(--bad); }
+.card.is-failed .card-head { background: var(--bad-soft); border-bottom-color: var(--bad-line); border-radius: 12px 12px 0 0; }
+.card.has-gap { border-color: var(--bad-line); }
+.bad-tag { border-color: var(--bad-line); background: var(--bad-soft); color: var(--bad-deep); font-family: var(--sans); font-weight: 600; }
+.mini.has-gap { border-color: var(--bad-line); }
+.mini.has-gap .mini-sum { color: var(--bad); }
+.step.is-failed, .step.is-failed em { color: var(--bad); }
+.banner.bad { border-color: var(--bad); background: linear-gradient(180deg, var(--bad-soft), var(--paper) 70%); }
+.banner.bad h2 { color: var(--bad-deep); }
+.note.bad { background: var(--bad-soft); color: var(--bad-deep); }
+.agent-chip.failed { border-color: var(--bad-line); background: var(--bad-soft); color: var(--bad-deep); }
+.run-pill.bad { border-color: var(--bad-line); background: var(--bad-soft); color: var(--bad-deep); }
+.run-pill.bad i { background: var(--bad); }
+.top-progress.bad span { background: var(--bad); }
 
 /* Review auto-approve countdown */
 .auto { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #f6dcc3; border-radius: 10px; background: #fff8f1; }

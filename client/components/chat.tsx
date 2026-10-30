@@ -5,7 +5,7 @@ import { formatDuration } from "@/lib/format";
 import type { RunState, StepState } from "@/lib/run";
 import { RESEARCH_STEPS, STEP_LABEL } from "@/lib/steps";
 import { useResearch } from "@/lib/use-research";
-import { AgentCard, MiniRow } from "./agent-card";
+import { AgentCard, hasDataGap, MiniRow } from "./agent-card";
 import { AutoApprove, Dot, FinalWorking, indexOf, railStatus, ReportCard } from "./desk";
 import { Header } from "./header";
 import { reportPlainText } from "./report";
@@ -222,12 +222,16 @@ function Exchange({
 
           {research.length ? (
             <div className="bot-agents">
-              {research.map((step) => (
-                <span key={step.id} className={`agent-chip ${step.status}`}>
-                  <Dot status={step.status} />
-                  {STEP_LABEL[step.id]}
-                </span>
-              ))}
+              {research.map((step) => {
+                // A step that finished without its data reads as a problem, not a green check.
+                const status = hasDataGap(step, run.facts) ? "failed" : step.status;
+                return (
+                  <span key={step.id} className={`agent-chip ${status}`}>
+                    <Dot status={status} />
+                    {STEP_LABEL[step.id]}
+                  </span>
+                );
+              })}
             </div>
           ) : null}
 
@@ -286,7 +290,7 @@ function Exchange({
             />
           ) : null}
           {run.phase === "blocked" ? (
-            <p className="note">{run.facts.guardrails_reason || "This question is not about a stock. Try asking about a company."}</p>
+            <p className="note bad">{run.facts.guardrails_reason || "This question is not about a stock. Try asking about a company."}</p>
           ) : null}
           {run.phase === "stopped" ? <p className="note">You rejected the draft, so no final report was written.</p> : null}
           {run.phase === "failed" ? (

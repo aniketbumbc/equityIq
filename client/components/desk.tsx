@@ -6,7 +6,7 @@ import { formatClock, formatDuration } from "@/lib/format";
 import type { RunState, StepState } from "@/lib/run";
 import { RESEARCH_STEPS, STEP_LABEL, STEPS } from "@/lib/steps";
 import { AUTO_APPROVE_MS, useResearch, type ResumeKind } from "@/lib/use-research";
-import { AgentCard, MiniRow } from "./agent-card";
+import { AgentCard, hasDataGap, MiniRow } from "./agent-card";
 import { Header } from "./header";
 import { Landing } from "./landing";
 import { reportPlainText, ReportBody } from "./report";
@@ -148,8 +148,11 @@ function Workspace({
         </div>
         <nav>
           {run.steps.map((step) => (
-            <div key={step.id} className={`step${step.status === "skipped" || step.status === "waiting" ? " muted" : ""}${step.id === "review" ? " split" : ""}`}>
-              <Dot status={step.status} />
+            <div
+              key={step.id}
+              className={`step${step.status === "skipped" || step.status === "waiting" ? " muted" : ""}${hasDataGap(step, run.facts) ? " is-failed" : ""}${step.id === "review" ? " split" : ""}`}
+            >
+              <Dot status={hasDataGap(step, run.facts) ? "failed" : step.status} />
               <span>{STEP_LABEL[step.id]}</span>
               <em>{stepMeta(step, run, now)}</em>
             </div>
@@ -440,7 +443,7 @@ function Blocked({ run, onStart }: { run: RunState; onStart: (query: string) => 
   const reason = run.facts.guardrails_reason || run.facts.final_response || "This question is not about a stock.";
   return (
     <div className="stack">
-      <section className="banner">
+      <section className="banner bad">
         <h2>This question was blocked</h2>
         <p>{reason}</p>
       </section>
@@ -465,7 +468,7 @@ function Blocked({ run, onStart }: { run: RunState; onStart: (query: string) => 
 
 function Failed({ run, onStart }: { run: RunState; onStart: (query: string) => void }) {
   return (
-    <section className="banner">
+    <section className="banner bad">
       <h2>The run could not finish</h2>
       <p>Something went wrong before the research was complete, so there is no draft to review.</p>
       <pre className="err">{run.error}</pre>

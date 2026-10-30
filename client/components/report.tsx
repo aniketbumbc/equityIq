@@ -11,7 +11,7 @@ export function ReportBody({ raw, plainNote }: ReportProps) {
     return (
       <div className="stack">
         {plainNote ? <p className="note">{plainNote}</p> : null}
-        <p className="prose">{raw || "No analysis was returned."}</p>
+        <p className={`prose${raw ? "" : " missing"}`}>{raw || "No analysis was returned."}</p>
       </div>
     );
   }
@@ -121,7 +121,7 @@ export function ReportBody({ raw, plainNote }: ReportProps) {
 
       <section>
         <h3>Data quality</h3>
-        <p>{qualityText(quality)}</p>
+        <p className={qualityGaps(quality).length ? "missing" : undefined}>{qualityText(quality)}</p>
       </section>
 
       {data.final_conclusion ? (
@@ -181,16 +181,22 @@ function scenarioLines(value: unknown): string[] {
   return lines;
 }
 
-function qualityText(quality: Record<string, unknown>): string {
-  const limitations = asTextList(quality.limitations);
-  if (limitations.length) return limitations.join(" ");
-  const gaps = [
+function qualityGaps(quality: Record<string, unknown>): string[] {
+  return [
     ["historical_data_available", "price history"],
     ["company_news_available", "company news"],
     ["market_sentiment_available", "market sentiment"],
     ["technical_indicators_available", "technical indicators"],
-  ].filter(([key]) => quality[key] === false);
+  ]
+    .filter(([key]) => quality[key] === false)
+    .map(([, label]) => label);
+}
+
+function qualityText(quality: Record<string, unknown>): string {
+  const limitations = asTextList(quality.limitations);
+  const gaps = qualityGaps(quality);
+  if (limitations.length) return gaps.length ? `Missing: ${gaps.join(", ")}. ${limitations.join(" ")}` : limitations.join(" ");
   if (!gaps.length && !Object.keys(quality).length) return "Not stated.";
   if (!gaps.length) return "The draft did not flag a missing input.";
-  return `Missing: ${gaps.map(([, label]) => label).join(", ")}.`;
+  return `Missing: ${gaps.join(", ")}.`;
 }

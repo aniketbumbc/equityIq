@@ -25,8 +25,9 @@ type CardProps = {
 export function AgentCard({ step, facts, index, open, onToggle }: CardProps) {
   const working = step.status === "working";
   const failed = step.status === "failed";
+  const gap = !failed && hasDataGap(step, facts);
   return (
-    <article className={`card${working ? " is-working" : ""}${failed ? " is-failed" : ""}`}>
+    <article className={`card${working ? " is-working" : ""}${failed ? " is-failed" : ""}${gap ? " has-gap" : ""}`}>
       <header className="card-head">
         <span className="idx">{index}</span>
         <h2>{step.id === "analyasis_agent" ? "Analysis" : STEP_LABEL[step.id]}</h2>
@@ -35,7 +36,8 @@ export function AgentCard({ step, facts, index, open, onToggle }: CardProps) {
           <span className="muted small">Broad stock market, not this company</span>
         ) : null}
         {step.id === "analyasis_agent" && step.status === "done" ? <span className="tag">Draft</span> : null}
-        <Status step={step} />
+        {gap ? <span className="tag bad-tag">Missing data</span> : null}
+        <Status step={step} gap={gap} />
       </header>
       {open ? <div className="card-body">{bodyFor(step, facts)}</div> : null}
       {step.status === "done" || step.status === "failed" ? (
@@ -49,7 +51,7 @@ export function AgentCard({ step, facts, index, open, onToggle }: CardProps) {
 
 export function MiniRow({ step, facts, index, onToggle }: CardProps) {
   return (
-    <div className="mini">
+    <div className={`mini${hasDataGap(step, facts) ? " has-gap" : ""}`}>
       <span className="idx">{index}</span>
       <span className="mini-name">{STEP_LABEL[step.id]}</span>
       <span className="mini-sum">{summaryFor(step, facts)}</span>
@@ -60,7 +62,7 @@ export function MiniRow({ step, facts, index, onToggle }: CardProps) {
   );
 }
 
-function Status({ step }: { step: StepState }) {
+function Status({ step, gap }: { step: StepState; gap: boolean }) {
   if (step.status === "working") {
     return (
       <span className="status run">
@@ -69,9 +71,7 @@ function Status({ step }: { step: StepState }) {
     );
   }
   if (step.status === "failed") return <span className="status fail">Failed</span>;
-  if (step.status === "done" && step.startedAt && step.finishedAt) {
-    return <span className="status ok">Done</span>;
-  }
+  if (step.status === "done" && gap) return <span className="status fail">Incomplete</span>;
   if (step.status === "done") return <span className="status ok">Done</span>;
   return null;
 }
@@ -152,7 +152,11 @@ function Supervisor({ facts }: { facts: Facts }) {
 function History({ facts }: { facts: Facts }) {
   const history = parseHistory(facts.historical_data);
   if (!history) {
-    return <p>{typeof facts.historical_data === "string" ? facts.historical_data : "No price history was returned."}</p>;
+    return (
+      <p className="missing">
+        {typeof facts.historical_data === "string" ? facts.historical_data : "No price history was returned."}
+      </p>
+    );
   }
   const changeClass = history.change == null ? "" : history.change >= 0 ? "up" : "down";
   return (
@@ -229,7 +233,7 @@ function CloseChart({ bars }: { bars: { datetime: string; close: number }[] }) {
 function SearchResults({ raw, empty }: { raw: unknown; empty: string }) {
   const items = parseNews(raw);
   const [showAll, setShowAll] = useState(false);
-  if (!items.length) return <p className="prose">{typeof raw === "string" && raw ? raw : empty}</p>;
+  if (!items.length) return <p className="prose missing">{typeof raw === "string" && raw ? raw : empty}</p>;
   const visible = showAll ? items : items.slice(0, 3);
   return (
     <div className="stack">
@@ -255,12 +259,30 @@ function Indicators({ facts }: { facts: Facts }) {
       {readings.map((reading) => (
         <div key={reading.label}>
           <div className="kicker">{reading.label}</div>
-          <div className={`stat${reading.missing ? " muted" : ""}`}>{reading.value}</div>
-          {reading.detail ? <div className="muted small">{reading.detail}</div> : null}
+          <div className={`stat${reading.missing ? " missing" : ""}`}>{reading.value}</div>
+          {reading.detail ? <div className={`small ${reading.missing ? "missing" : "muted"}`}>{reading.detail}</div> : null}
         </div>
       ))}
     </div>
   );
+}
+
+/** True when an agent failed, or finished without the data it was meant to fetch. */
+export function hasDataGap(step: StepState, facts: Facts): boolean {
+  if (step.status === "failed") return true;
+  if (step.status !== "done") return false;
+  switch (step.id) {
+    case "historic_data_agent":
+      return !parseHistory(facts.historical_data);
+    case "company_news_agent":
+      return !parseNews(facts.company_news).length;
+    case "market_sentiment_agent":
+      return !parseNews(facts.market_sentiment).length;
+    case "technical_indicator_agent":
+      return parseIndicators(facts.technical_indicator).some((reading) => reading.missing);
+    default:
+      return false;
+  }
 }
 
 export function summaryFor(step: StepState, facts: Facts): string {
@@ -282,10 +304,10 @@ export function summaryFor(step: StepState, facts: Facts): string {
     }
     case "company_news_agent": {
       const count = parseNews(facts.company_news).length;
-      return count ? `${count} articles` : "Done";
+      return count ? `${count} ${count === 1 ? "article" : "articles"}` : "No articles found";
     }
     case "market_sentiment_agent":
-      return "Broad market";
+      return parseNews(facts.market_sentiment).length ? "Broad market" : "No results found";
     case "technical_indicator_agent":
       return parseIndicators(facts.technical_indicator)
         .map((reading) => `${reading.label} ${reading.missing ? "missing" : reading.value}`)

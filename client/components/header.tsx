@@ -6,7 +6,7 @@ import type { RunState } from "@/lib/run";
 import { RESEARCH_STEPS } from "@/lib/steps";
 import { HowItWorks } from "./how-it-works";
 
-type Tone = "live" | "wait" | "ok" | "stop";
+type Tone = "live" | "wait" | "ok" | "stop" | "bad";
 
 export function Header({
   run,
@@ -107,8 +107,8 @@ function runStatus(run: RunState): { label: string; tone: Tone; progress: number
     case "stopped":
       return { label: "Run stopped", tone: "stop", progress: 1 };
     case "blocked":
-      return { label: "Question blocked", tone: "stop", progress: 1 };
+      return { label: "Question blocked", tone: "bad", progress: 1 };
     default:
-      return { label: "Run failed", tone: "stop", progress: 1 };
+      return { label: "Run failed", tone: "bad", progress: 1 };
   }
 }

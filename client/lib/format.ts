@@ -87,6 +87,8 @@ export function parseHistory(value: unknown): HistoryView | null {
 
 export function parseNews(raw: unknown): NewsItem[] {
   if (typeof raw !== "string" || !raw.trim()) return [];
+  // Messages like "No search results found" or "Search failed: …" are not results.
+  if (!/^\s*\d+\.\s*\*\*/m.test(raw)) return [];
   // Results start with "N. **Title**"; snippets can contain blank lines of their own.
   return raw
     .split(/\n\s*\n(?=\d+\.\s*\*\*)/)
