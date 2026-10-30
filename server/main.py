@@ -1,6 +1,10 @@
 import json
+import os
 from collections.abc import Iterator
+from pathlib import Path
 from uuid import uuid4
+
+from dotenv import load_dotenv
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,10 +14,19 @@ from pydantic import BaseModel, Field
 
 from graph import graph
 
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
+# Comma-separated site origins allowed to call the API, e.g. "https://example.com,https://www.example.com".
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+    if origin.strip()
+]
+
 app = FastAPI(title="EquityIQ")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
