@@ -11,6 +11,9 @@
   --accent-deep: #c4560c;
   --ok: #3caf62;
   --down: #c2410c;
+  --good: #1e7f45;
+  --good-soft: #effaf2;
+  --good-line: #bfe3c9;
   --bad: #d92d20;
   --bad-deep: #a8190f;
   --bad-soft: #fef1f0;
@@ -470,6 +473,16 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent); box-sh
 .run-pill.bad { border-color: var(--bad-line); background: var(--bad-soft); color: var(--bad-deep); }
 .run-pill.bad i { background: var(--bad); }
 .top-progress.bad span { background: var(--bad); }
+
+/* Successful agent output */
+.card.is-ok { border-color: var(--good-line); }
+.card.is-ok .card-head { background: linear-gradient(90deg, var(--good-soft), var(--paper) 70%); border-radius: 12px 12px 0 0; }
+.card.is-ok .lead, .card.is-ok .stat:not(.up):not(.down), .card.is-ok .news h3, .card.is-ok .news h3 a { color: var(--good); }
+/* Headlines are not section labels: undo the uppercase .card-body h3 style for them. */
+.card-body .news h3 { margin: 0 0 4px; font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.mini.is-ok { border-color: var(--good-line); }
+.mini.is-ok .mini-sum { color: var(--good); }
+.agent-chip.done { border-color: var(--good-line); background: var(--good-soft); color: var(--good); }
 
 /* Review auto-approve countdown */
 .auto { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #f6dcc3; border-radius: 10px; background: #fff8f1; }

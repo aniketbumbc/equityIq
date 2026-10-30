@@ -26,8 +26,11 @@ export function AgentCard({ step, facts, index, open, onToggle }: CardProps) {
   const working = step.status === "working";
   const failed = step.status === "failed";
   const gap = !failed && hasDataGap(step, facts);
+  const ok = isGoodOutput(step, facts);
   return (
-    <article className={`card${working ? " is-working" : ""}${failed ? " is-failed" : ""}${gap ? " has-gap" : ""}`}>
+    <article
+      className={`card${working ? " is-working" : ""}${failed ? " is-failed" : ""}${gap ? " has-gap" : ""}${ok ? " is-ok" : ""}`}
+    >
       <header className="card-head">
         <span className="idx">{index}</span>
         <h2>{step.id === "analyasis_agent" ? "Analysis" : STEP_LABEL[step.id]}</h2>
@@ -51,7 +54,7 @@ export function AgentCard({ step, facts, index, open, onToggle }: CardProps) {
 
 export function MiniRow({ step, facts, index, onToggle }: CardProps) {
   return (
-    <div className={`mini${hasDataGap(step, facts) ? " has-gap" : ""}`}>
+    <div className={`mini${hasDataGap(step, facts) ? " has-gap" : ""}${isGoodOutput(step, facts) ? " is-ok" : ""}`}>
       <span className="idx">{index}</span>
       <span className="mini-name">{STEP_LABEL[step.id]}</span>
       <span className="mini-sum">{summaryFor(step, facts)}</span>
@@ -283,6 +286,14 @@ export function hasDataGap(step: StepState, facts: Facts): boolean {
     default:
       return false;
   }
+}
+
+/**
+ * True when an agent finished with all of its data, so its output shows in green.
+ * The analysis draft is left out: a green "bearish" forecast would read as good news.
+ */
+export function isGoodOutput(step: StepState, facts: Facts): boolean {
+  return step.status === "done" && step.id !== "analyasis_agent" && !hasDataGap(step, facts);
 }
 
 export function summaryFor(step: StepState, facts: Facts): string {
