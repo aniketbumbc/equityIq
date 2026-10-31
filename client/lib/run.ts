@@ -40,6 +40,7 @@ export type Facts = {
   rerun_agents?: string[];
   data_settings?: DataSettings;
   revision_reasoning?: string;
+  stop_reason?: string;
 };
 
 export type DataSettings = {
@@ -90,6 +91,7 @@ const FACT_KEYS: (keyof Facts)[] = [
   "rerun_agents",
   "data_settings",
   "revision_reasoning",
+  "stop_reason",
 ];
 
 export function createRun(query: string, now = Date.now()): RunState {
@@ -183,6 +185,8 @@ function applyNode(state: RunState, event: StreamEvent, now: number): RunState {
     };
   });
   steps = settleEarlier(steps, id);
+  // No company in the question: the server ran nothing after this step.
+  if (facts.stop_reason) return blockRun({ ...state, facts, steps }, now);
   if (id === "supervisor") steps = skipUnselected(steps, facts.selected_agents);
   return { ...state, facts, steps: promoteWorking(steps, now) };
 }
@@ -224,7 +228,7 @@ function pauseForReview(state: RunState, event: StreamEvent, now: number): RunSt
 function finishRun(state: RunState, event: StreamEvent, now: number): RunState {
   const facts = mergeFacts(state.facts, event);
   const threadId = String(event.thread_id || state.threadId);
-  if (facts.guardrails_allowed === false) return { ...blockRun({ ...state, facts }, now), threadId };
+  if (facts.guardrails_allowed === false || facts.stop_reason) return { ...blockRun({ ...state, facts }, now), threadId };
   const finalText = String(facts.final_response || "");
   if (finalText && /could not be generated/i.test(finalText)) {
     return { ...failRun({ ...state, facts, threadId }, finalText, now), threadId };
@@ -261,6 +265,11 @@ function failRun(state: RunState, detail: string, now: number): RunState {
     return step;
   });
   return { ...state, phase: "failed", error: detail, steps };
+}
+
+/** Heading for a run that ended early: a blocked question, or one that names no company. */
+export function blockedLabel(run: RunState): string {
+  return run.facts.stop_reason ? "No company found" : "Question blocked";
 }
 
 function blockRun(state: RunState, now: number): RunState {

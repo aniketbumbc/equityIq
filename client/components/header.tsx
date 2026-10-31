@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import type { RunState } from "@/lib/run";
+import { blockedLabel, type RunState } from "@/lib/run";
 import { RESEARCH_STEPS } from "@/lib/steps";
 import { HowItWorks } from "./how-it-works";
 
@@ -107,7 +107,7 @@ function runStatus(run: RunState): { label: string; tone: Tone; progress: number
     case "stopped":
       return { label: "Run stopped", tone: "stop", progress: 1 };
     case "blocked":
-      return { label: "Question blocked", tone: "bad", progress: 1 };
+      return { label: blockedLabel(run), tone: "bad", progress: 1 };
     default:
       return { label: "Run failed", tone: "bad", progress: 1 };
   }

@@ -11,6 +11,11 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 openai_llm = ChatOpenAI(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o-mini")
 
+NO_COMPANY_MESSAGE = (
+    "I couldn't find a company name in your question. "
+    "Name the company you want researched, for example \"Should I buy Apple stock?\""
+)
+
 #company_name_agent is a function that takes a state and returns a state
 
 def company_name_agent(state: EquityIQState) -> EquityIQState:
@@ -41,8 +46,15 @@ def company_name_agent(state: EquityIQState) -> EquityIQState:
             "messages": [AIMessage(content=f"Company name lookup failed: {exc}")],
             "llm_calls": llm_calls,
         }
+    if not company_name:
+        return {
+            "company_name": "",
+            "stop_reason": NO_COMPANY_MESSAGE,
+            "messages": [AIMessage(content=NO_COMPANY_MESSAGE)],
+            "llm_calls": llm_calls,
+        }
     return {
         "company_name": company_name,
-        "messages": [AIMessage(content=company_name or "No company name found")],
+        "messages": [AIMessage(content=company_name)],
         "llm_calls": llm_calls,
     }

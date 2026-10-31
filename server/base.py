@@ -34,6 +34,7 @@ class EquityIQState(TypedDict):
     data_settings:dict[str,Any] #history range, interval, and search focus set by revisions
     revision_reasoning:str #why the planner chose those agents
     final_response:str #final response
+    stop_reason:str #why the run ended early, e.g. no company named in the question
 
 
 

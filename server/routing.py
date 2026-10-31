@@ -27,6 +27,7 @@ ROUTE_MAP = {
     "human_in_the_loop": "human_in_the_loop",
     "revision_planner": "revision_planner",
     "final_response_agent": "final_response_agent",
+    END: END,
 }
 
 
@@ -49,6 +50,9 @@ def route_from_supervisor(state:EquityIQState) -> str:
 
 def route_after_agent(current_agent:str):
     def route(state:EquityIQState) -> str:
+        # No company in the question: stop here so no other agent runs.
+        if state.get("stop_reason"):
+            return END
         selected = _selected_agent(state)
         current_index = AGNET_ORDER.index(current_agent)
 

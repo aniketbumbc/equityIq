@@ -63,6 +63,7 @@ PUBLIC_KEYS = (
     "rerun_agents",
     "data_settings",
     "revision_reasoning",
+    "stop_reason",
 )
 
 

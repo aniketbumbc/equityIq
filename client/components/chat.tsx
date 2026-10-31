@@ -290,7 +290,11 @@ function Exchange({
             />
           ) : null}
           {run.phase === "blocked" ? (
-            <p className="note bad">{run.facts.guardrails_reason || "This question is not about a stock. Try asking about a company."}</p>
+            <p className="note bad">
+              {run.facts.stop_reason ||
+                run.facts.guardrails_reason ||
+                "This question is not about a stock. Try asking about a company."}
+            </p>
           ) : null}
           {run.phase === "stopped" ? <p className="note">You rejected the draft, so no final report was written.</p> : null}
           {run.phase === "failed" ? (

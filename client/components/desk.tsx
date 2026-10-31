@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatClock, formatDuration } from "@/lib/format";
-import type { RunState, StepState } from "@/lib/run";
+import { blockedLabel, type RunState, type StepState } from "@/lib/run";
 import { RESEARCH_STEPS, STEP_LABEL, STEPS } from "@/lib/steps";
 import { AUTO_APPROVE_MS, useResearch, type ResumeKind } from "@/lib/use-research";
 import { AgentCard, hasDataGap, MiniRow } from "./agent-card";
@@ -440,11 +440,12 @@ export function FinalWorking({ run }: { run: RunState }) {
 
 function Blocked({ run, onStart }: { run: RunState; onStart: (query: string) => void }) {
   const [value, setValue] = useState("");
-  const reason = run.facts.guardrails_reason || run.facts.final_response || "This question is not about a stock.";
+  const reason =
+    run.facts.stop_reason || run.facts.guardrails_reason || run.facts.final_response || "This question is not about a stock.";
   return (
     <div className="stack">
       <section className="banner bad">
-        <h2>This question was blocked</h2>
+        <h2>{run.facts.stop_reason ? "No company found in your question" : "This question was blocked"}</h2>
         <p>{reason}</p>
       </section>
       <section className="banner flat">
@@ -516,7 +517,7 @@ export function railStatus(run: RunState, finished: number, total: number) {
     case "stopped":
       return "Run stopped";
     case "blocked":
-      return "Question blocked";
+      return blockedLabel(run);
     case "failed":
       return "Run failed";
     default:
