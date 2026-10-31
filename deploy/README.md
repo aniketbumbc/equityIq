@@ -126,7 +126,9 @@ sudo tail -f /var/log/nginx/error.log
 ## Things to know
 
 - **One API worker.** Runs that wait for review are kept in the API process's memory (`InMemorySaver` in `server/graph.py`). The service runs one worker so every resume reaches the process that started the run. A restart loses those runs. Moving to the Postgres checkpointer (already in `requirements.txt`) would keep runs across restarts and allow more workers.
-- **Rate limit.** Nginx lets each visitor start or resume about 6 runs a minute (with a burst of 5), because every run spends paid API credits. Change `rate=` in the Nginx config to adjust. A blocked request gets HTTP 429.
+- **Rate limits.** Every question spends paid API credits, so there are two limits, both per visitor IP address:
+  - The API allows **5 new questions per rolling 30 minutes**. Approving, revising, or rejecting a draft does not count. The sixth question gets HTTP 429 and the page shows "You can ask 5 questions every 30 minutes. Try again in N minutes." Change it with `RATE_LIMIT_QUESTIONS` and `RATE_LIMIT_WINDOW_MINUTES` in `server/.env`, or set `RATE_LIMIT_QUESTIONS=0` to turn it off. The counts live in the API's memory, so restarting the API resets them.
+  - Nginx also caps bursts at about 6 requests a minute (`rate=` in the Nginx config), which covers rapid approve and revise clicks too.
 - **Streaming.** The API streams progress as server-sent events. The Nginx config turns buffering off and allows 10-minute responses for `/api/`. Without that, the progress would only appear when a run ends.
 
 ## If something does not work

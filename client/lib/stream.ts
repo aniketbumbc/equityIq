@@ -31,6 +31,13 @@ export async function streamEvents(
     } catch {
       detail = "";
     }
+    // FastAPI errors arrive as {"detail": "..."}; show the message, not the JSON.
+    try {
+      const parsed = JSON.parse(detail) as { detail?: unknown };
+      if (typeof parsed.detail === "string") detail = parsed.detail;
+    } catch {
+      // Not JSON: keep the text as it is.
+    }
     throw new Error(detail || `Request failed (${response.status})`);
   }
 

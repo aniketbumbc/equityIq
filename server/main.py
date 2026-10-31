@@ -1,12 +1,16 @@
 import json
+import math
 import os
+import time
+from collections import defaultdict, deque
 from collections.abc import Iterator
 from pathlib import Path
+from threading import Lock
 from uuid import uuid4
 
 from dotenv import load_dotenv
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from langgraph.types import Command
@@ -22,6 +26,15 @@ CORS_ORIGINS = [
     for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
     if origin.strip()
 ]
+
+# Each new question spends paid API credits, so each visitor gets a few per rolling window.
+# Approving, revising, or rejecting a draft continues a question and does not count.
+RATE_LIMIT_QUESTIONS = int(os.getenv("RATE_LIMIT_QUESTIONS", "5"))
+RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("RATE_LIMIT_WINDOW_MINUTES", "30")) * 60
+
+# In memory, like the saved runs, which is why the API runs one worker.
+_question_times: dict[str, deque[float]] = defaultdict(deque)
+_question_lock = Lock()
 
 app = FastAPI(title="EquityIQ")
 app.add_middleware(
@@ -142,8 +155,33 @@ def _sse(events: Iterator[str]) -> StreamingResponse:
     )
 
 
+def _check_question_limit(client: str) -> None:
+    """Record a new question from `client`, or raise 429 if they used up the window."""
+    if RATE_LIMIT_QUESTIONS <= 0:
+        return
+    now = time.monotonic()
+    with _question_lock:
+        times = _question_times[client]
+        while times and now - times[0] >= RATE_LIMIT_WINDOW_SECONDS:
+            times.popleft()
+        if len(times) >= RATE_LIMIT_QUESTIONS:
+            retry_after = math.ceil(RATE_LIMIT_WINDOW_SECONDS - (now - times[0]))
+            minutes = max(1, math.ceil(retry_after / 60))
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    f"You can ask {RATE_LIMIT_QUESTIONS} questions every {RATE_LIMIT_WINDOW_SECONDS // 60} minutes. "
+                    f"Try again in {minutes} {'minute' if minutes == 1 else 'minutes'}."
+                ),
+                headers={"Retry-After": str(retry_after)},
+            )
+        times.append(now)
+
+
 @app.post("/api/analyze")
-def analyze(body: AnalyzeRequest):
+def analyze(body: AnalyzeRequest, request: Request):
+    # Behind Nginx, uvicorn --proxy-headers puts the visitor's address here instead of 127.0.0.1.
+    _check_question_limit(request.client.host if request.client else "unknown")
     thread_id = str(uuid4())
     return _sse(_stream(
         {
