@@ -1,7 +1,7 @@
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import END, START, StateGraph
 
-from agents.analyasis_agent import analyasis_agent
+from agents.analysis_agent import analysis_agent
 from agents.company_name_agent import company_name_agent
 from agents.company_news_agent import company_news_agent
 from agents.historic_data_agent import historic_data_agent
@@ -24,7 +24,7 @@ builder.add_node("historic_data_agent", historic_data_agent)
 builder.add_node("company_news_agent", company_news_agent) #add node to graph
 builder.add_node("market_sentiment_agent", market_sentiment_agent) #add node to graph
 builder.add_node("technical_indicator_agent", technical_indicator_agent) #add node to graph
-builder.add_node("analyasis_agent", analyasis_agent) #add node to graph
+builder.add_node("analysis_agent", analysis_agent) #add node to graph
 builder.add_node("human_in_the_loop", human_in_the_loop) #add node to graph
 builder.add_node("revision_planner", revision_planner)
 builder.add_node("final_response_agent", final_response_agent)
@@ -37,7 +37,7 @@ builder.add_conditional_edges("historic_data_agent", route_after_agent("historic
 builder.add_conditional_edges("company_news_agent", route_after_agent("company_news_agent"),ROUTE_MAP)
 builder.add_conditional_edges("market_sentiment_agent", route_after_agent("market_sentiment_agent"),ROUTE_MAP)
 builder.add_conditional_edges("technical_indicator_agent", route_after_agent("technical_indicator_agent"),ROUTE_MAP)
-builder.add_conditional_edges("analyasis_agent", route_after_agent("analyasis_agent"),ROUTE_MAP)
+builder.add_conditional_edges("analysis_agent", route_after_agent("analysis_agent"),ROUTE_MAP)
 builder.add_conditional_edges(
     "human_in_the_loop",
     route_from_human,

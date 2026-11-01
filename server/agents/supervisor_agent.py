@@ -97,7 +97,7 @@ def supervisor(state: EquityIQState) -> EquityIQState:
         return {
             "guardrails_allowed": True,
             "guardrails_reason": guardrails_reason,
-            "selected_agents": ["company_name_agent", *requested, "analyasis_agent"],
+            "selected_agents": ["company_name_agent", *requested, "analysis_agent"],
             "query_constraints": _empty_constraints(),
             "supervisor_reasoning": "You chose the research tools for this question.",
             "messages": [AIMessage(content=f"Supervisor used the tools the user chose: {requested}.")],
@@ -113,11 +113,11 @@ def supervisor(state: EquityIQState) -> EquityIQState:
    - company_news_agent: Fetches recent company news.
    - market_sentiment_agent: Fetches broad stock-market sentiment.
    - technical_indicator_agent: Fetches RSI, MACD, and ATR.
-   - analyasis_agent: Writes the forecast from the gathered evidence.
+   - analysis_agent: Writes the forecast from the gathered evidence.
 
    Return strict JSON only using this schema:
    {{
-    "selected_agents": ["company_name_agent", "historic_data_agent", "company_news_agent", "market_sentiment_agent", "technical_indicator_agent", "analyasis_agent"],
+    "selected_agents": ["company_name_agent", "historic_data_agent", "company_news_agent", "market_sentiment_agent", "technical_indicator_agent", "analysis_agent"],
     "query_constraints": {{
         "company": "",
         "historical": "",

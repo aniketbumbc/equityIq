@@ -5,7 +5,7 @@ export const RESEARCH_STEPS = [
   { id: "company_news_agent", label: "Company news" },
   { id: "market_sentiment_agent", label: "Market sentiment" },
   { id: "technical_indicator_agent", label: "Technical indicators" },
-  { id: "analyasis_agent", label: "Analysis" },
+  { id: "analysis_agent", label: "Analysis" },
 ] as const;
 
 export const LATER_STEPS = [

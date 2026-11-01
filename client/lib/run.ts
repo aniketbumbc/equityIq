@@ -136,7 +136,7 @@ export function beginResume(
   if (kind === "revise") {
     // The planner picks agents to re-run, then the analysis agent writes a new draft and the run pauses again.
     const steps = state.steps.map((step) => {
-      if (step.id === "analyasis_agent") return { id: step.id, status: "working" as const, startedAt: now };
+      if (step.id === "analysis_agent") return { id: step.id, status: "working" as const, startedAt: now };
       if (step.id === "review") return { id: step.id, status: "waiting" as const };
       return step;
     });
@@ -196,7 +196,7 @@ function planRevision(state: RunState, facts: Facts, now: number): RunState {
   if (!rerun.length) return { ...state, facts, rerun };
   // Chosen agents run again in order, then the analysis agent; the rest keep their results.
   const steps = state.steps.map((step) =>
-    rerun.includes(step.id) || step.id === "analyasis_agent" ? { id: step.id, status: "waiting" as const } : step,
+    rerun.includes(step.id) || step.id === "analysis_agent" ? { id: step.id, status: "waiting" as const } : step,
   );
   return { ...state, facts, rerun, steps: promoteWorking(steps, now) };
 }
@@ -208,7 +208,7 @@ function pauseForReview(state: RunState, event: StreamEvent, now: number): RunSt
     facts.analysis_results = review.draft_analysis;
   }
   const steps = state.steps.map((step) => {
-    if (step.id === "analyasis_agent" && step.status !== "failed" && step.status !== "done") {
+    if (step.id === "analysis_agent" && step.status !== "failed" && step.status !== "done") {
       return { ...step, status: "done" as const, finishedAt: now, startedAt: step.startedAt ?? now };
     }
     if (step.id === "review") return { ...step, status: "working" as const, startedAt: now };
@@ -364,7 +364,7 @@ function failureMessage(id: StepId, event: StreamEvent): string {
     return event.technical_indicator;
   }
   if (
-    id === "analyasis_agent" &&
+    id === "analysis_agent" &&
     typeof event.analysis_results === "string" &&
     /could not be generated|analysis failed/i.test(event.analysis_results) &&
     !event.analysis_results.includes("{")

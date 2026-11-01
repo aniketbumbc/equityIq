@@ -33,12 +33,12 @@ export function AgentCard({ step, facts, index, open, onToggle }: CardProps) {
     >
       <header className="card-head">
         <span className="idx">{index}</span>
-        <h2>{step.id === "analyasis_agent" ? "Analysis" : STEP_LABEL[step.id]}</h2>
+        <h2>{step.id === "analysis_agent" ? "Analysis" : STEP_LABEL[step.id]}</h2>
         {step.id === "historic_data_agent" && facts.symbol ? <span className="ticker">{facts.symbol}</span> : null}
         {step.id === "market_sentiment_agent" ? (
           <span className="muted small">Broad stock market, not this company</span>
         ) : null}
-        {step.id === "analyasis_agent" && step.status === "done" ? <span className="tag">Draft</span> : null}
+        {step.id === "analysis_agent" && step.status === "done" ? <span className="tag">Draft</span> : null}
         {gap ? <span className="tag bad-tag">Missing data</span> : null}
         <Status step={step} gap={gap} />
       </header>
@@ -118,7 +118,7 @@ function bodyFor(step: StepState, facts: Facts) {
       return <SearchResults raw={facts.market_sentiment} empty="No market sentiment was returned." />;
     case "technical_indicator_agent":
       return <Indicators facts={facts} />;
-    case "analyasis_agent":
+    case "analysis_agent":
       return (
         <ReportBody
           raw={String(facts.analysis_results || "")}
@@ -293,7 +293,7 @@ export function hasDataGap(step: StepState, facts: Facts): boolean {
  * The analysis draft is left out: a green "bearish" forecast would read as good news.
  */
 export function isGoodOutput(step: StepState, facts: Facts): boolean {
-  return step.status === "done" && step.id !== "analyasis_agent" && !hasDataGap(step, facts);
+  return step.status === "done" && step.id !== "analysis_agent" && !hasDataGap(step, facts);
 }
 
 export function summaryFor(step: StepState, facts: Facts): string {
@@ -323,7 +323,7 @@ export function summaryFor(step: StepState, facts: Facts): string {
       return parseIndicators(facts.technical_indicator)
         .map((reading) => `${reading.label} ${reading.missing ? "missing" : reading.value}`)
         .join(" · ");
-    case "analyasis_agent":
+    case "analysis_agent":
       return "Draft ready";
     case "review":
       return "Paused";
@@ -346,7 +346,7 @@ function workingCopy(id: StepState["id"], facts: Facts): string {
       return "Searching the broad stock-market mood…";
     case "technical_indicator_agent":
       return "Loading monthly RSI, monthly MACD, and daily ATR…";
-    case "analyasis_agent":
+    case "analysis_agent":
       return facts.human_feedback && !facts.approved
         ? "Revising the draft with your feedback…"
         : "Writing the forecast draft…";

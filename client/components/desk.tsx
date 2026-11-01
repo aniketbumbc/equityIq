@@ -127,7 +127,7 @@ function Workspace({
     if (run.phase === "review" || run.phase === "revising" || run.phase === "finishing") {
       if (run.phase === "revising" && step.status === "working") return true;
       if (run.rerun.includes(step.id) && step.status === "done") return true;
-      return step.status === "failed" || (step.id === "analyasis_agent" && step.status !== "skipped");
+      return step.status === "failed" || (step.id === "analysis_agent" && step.status !== "skipped");
     }
     if (run.phase === "failed") return step.status === "failed";
     return false;

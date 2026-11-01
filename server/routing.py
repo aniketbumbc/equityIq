@@ -10,7 +10,7 @@ AGNET_ORDER = [
     "company_news_agent",
     "market_sentiment_agent",
     "technical_indicator_agent",
-    "analyasis_agent",
+    "analysis_agent",
     "human_in_the_loop",
     "final_response_agent",
 ]
@@ -23,7 +23,7 @@ ROUTE_MAP = {
     "company_news_agent": "company_news_agent",
     "market_sentiment_agent": "market_sentiment_agent",
     "technical_indicator_agent": "technical_indicator_agent",
-    "analyasis_agent": "analyasis_agent",
+    "analysis_agent": "analysis_agent",
     "human_in_the_loop": "human_in_the_loop",
     "revision_planner": "revision_planner",
     "final_response_agent": "final_response_agent",
@@ -44,7 +44,7 @@ def route_from_supervisor(state:EquityIQState) -> str:
     if not state.get("guardrails_allowed",True):
         return "guardrail_blocked"
     selected = _selected_agent(state)
-    return selected[0] if selected else "analyasis_agent"
+    return selected[0] if selected else "analysis_agent"
 
 
 
@@ -62,9 +62,9 @@ def route_after_agent(current_agent:str):
                 "final_response_agent",
             }:
                 return next_agent
-        if current_agent == "analyasis_agent":
+        if current_agent == "analysis_agent":
             return "human_in_the_loop"
-        return "analyasis_agent"
+        return "analysis_agent"
     return route
 
 
@@ -85,4 +85,4 @@ def route_from_human(state:EquityIQState) -> str:
 def route_from_planner(state:EquityIQState) -> str:
     """Start with the first agent to re-run, or go straight to a new draft."""
     rerun = [agent for agent in AGNET_ORDER if agent in (state.get("rerun_agents") or [])]
-    return rerun[0] if rerun else "analyasis_agent"
+    return rerun[0] if rerun else "analysis_agent"

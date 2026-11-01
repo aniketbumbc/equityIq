@@ -16,7 +16,7 @@ KNOWN_AGENTS = {
     "company_news_agent",
     "market_sentiment_agent",
     "technical_indicator_agent",
-    "analyasis_agent",
+    "analysis_agent",
 }
 
 AGENT_ORDER = [
@@ -25,7 +25,7 @@ AGENT_ORDER = [
     "company_news_agent",
     "market_sentiment_agent",
     "technical_indicator_agent",
-    "analyasis_agent",
+    "analysis_agent",
 ]
 
 

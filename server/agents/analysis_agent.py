@@ -117,7 +117,7 @@ def _revision_request(state:EquityIQState) -> str:
     """
 
 
-def analyasis_agent(state:EquityIQState) -> EquityIQState:
+def analysis_agent(state:EquityIQState) -> EquityIQState:
     """
     Analyasis agent is responsible for analyzing the data and providing a final response to the user.
     """

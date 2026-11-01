@@ -326,7 +326,7 @@ function Evidence({ run }: { run: RunState }) {
   if (!steps.length) return null;
   // The draft stays open while it waits for review; everything else is one click away.
   const isOpen = (step: StepState) =>
-    open[step.id] ?? (run.phase === "review" && step.id === "analyasis_agent");
+    open[step.id] ?? (run.phase === "review" && step.id === "analysis_agent");
   return (
     <div className="stack bot-evidence">
       {steps.map((step) =>

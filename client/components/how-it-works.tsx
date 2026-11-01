@@ -21,7 +21,7 @@ const FLOW: FlowStep[] = [
   { agent: "company_news_agent", title: "Company news", calls: "Tavily search", output: "3 recent articles" },
   { agent: "market_sentiment_agent", title: "Market sentiment", calls: "Tavily search", output: "Broad market mood" },
   { agent: "technical_indicator_agent", title: "Technical indicators", calls: "Alpha Vantage · Twelve Data", output: "RSI · MACD · ATR" },
-  { agent: "analyasis_agent", title: "Analysis", calls: "GPT-4o mini", output: "Draft: direction, confidence, risks" },
+  { agent: "analysis_agent", title: "Analysis", calls: "GPT-4o mini", output: "Draft: direction, confidence, risks" },
   { agent: "human_in_the_loop", title: "Your review", calls: "You", output: "Approve · Revise · Reject" },
   {
     agent: "revision_planner",
