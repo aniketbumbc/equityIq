@@ -1,7 +1,11 @@
+import logging
+
 from langchain_core.messages import AIMessage
 
 from base import EquityIQState
 from utils import _json_from_llm, _llm_text
+
+logger = logging.getLogger(__name__)
 
 RERUNNABLE_AGENTS = [
     "historic_data_agent",
@@ -84,8 +88,8 @@ def revision_planner(state: EquityIQState) -> EquityIQState:
                 if _focus(changes.get(key)):
                     settings[key] = _focus(changes[key])
         reasoning = str(parsed.get("reasoning", "")).strip()
-    except Exception as exc:
-        print(f"Error in revision planner: {exc}")
+    except Exception:
+        logger.exception("Error in revision planner")
         rerun_agents = []
         reasoning = "The draft was revised from the data already gathered."
 

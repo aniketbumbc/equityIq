@@ -1,8 +1,12 @@
+import logging
+
 from langchain_core.messages import AIMessage
 
 from base import EquityIQState
 from routing import AGNET_ORDER
 from utils import _empty_constraints, _json_from_llm, _llm_text
+
+logger = logging.getLogger(__name__)
 
 SELECTABLE_AGENTS = [
     name
@@ -70,8 +74,8 @@ def supervisor(state: EquityIQState) -> EquityIQState:
         guardrails_result = _json_from_llm(guardrails_response_raw)
         allowed_request = _as_bool(guardrails_result.get("allowed_request", True))
         guardrails_reason = str(guardrails_result.get("reason", "")).strip()
-    except Exception as exc:
-        print(f"Error in guardrails: {exc}")
+    except Exception:
+        logger.exception("Error in guardrails")
         allowed_request = True
         guardrails_reason = "Guardrails validation fallback allowed the request."
 
@@ -156,7 +160,7 @@ def supervisor(state: EquityIQState) -> EquityIQState:
         supervisor_reasoning = str(parsed_response.get("supervisor_reasoning", "")).strip()
         llm_calls += 1
     except Exception as exc:
-        print(f"Error in supervisor: {exc}")
+        logger.exception("Error in supervisor")
         selected_agents = SELECTABLE_AGENTS.copy()
         constraints = _empty_constraints()
         supervisor_reasoning = f"Supervisor validation fallback allowed the request. {exc}"
