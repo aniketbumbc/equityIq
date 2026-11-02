@@ -32,6 +32,12 @@ uvicorn main:app --reload
 
 The app listens on `http://127.0.0.1:8000`. Interactive docs are at `http://127.0.0.1:8000/docs`.
 
+To check the pipeline without the API, run one question from the command line. It calls the real APIs, approves the draft, and prints the final report:
+
+```bash
+python smoke_run.py "Should I buy Starbucks stock?"
+```
+
 ## Endpoints
 
 ### `POST /api/analyze`
