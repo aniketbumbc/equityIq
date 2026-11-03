@@ -32,6 +32,12 @@ export function Header({
   const status = run ? runStatus(run) : null;
   return (
     <header className={`top${scrolled ? " is-scrolled" : ""}`}>
+      <p className="proto-note" role="note">
+        <span className="proto-tag">Prototype</span>
+        <span>
+          Runs on <mark>free API plans</mark>, so some agents may fail or come back with missing data when a limit is hit.
+        </span>
+      </p>
       <div className="top-inner">
         {/* Always leads to the landing page; on the landing page it also clears the current run. */}
         <Link href="/" className="brand" onClick={onReset} aria-label="EquityIQ home">
