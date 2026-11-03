@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { blockedLabel, type RunState } from "@/lib/run";
 import { RESEARCH_STEPS } from "@/lib/steps";
 import { HowItWorks } from "./how-it-works";
+import { ThemeToggle } from "./theme-toggle";
 
 type Tone = "live" | "wait" | "ok" | "stop" | "bad";
 
@@ -44,6 +45,7 @@ export function Header({
         <span className="sub">{page === "chat" ? "Research chat" : "Stock research desk"}</span>
 
         <div className="top-actions">
+          <ThemeToggle />
           {status ? (
             <>
               <span className={`run-pill ${status.tone}`} role="status">

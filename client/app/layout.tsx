@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Inter } from "next/font/google";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,7 +21,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+    // The theme script sets data-theme before React loads, so the server and client markup differ on purpose.
+    <html lang="en" className={`${inter.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );
